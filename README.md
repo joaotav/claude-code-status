@@ -138,15 +138,33 @@ at a smaller width.
 
 ## Development
 
+Requires Python 3.11+ for the tests (the script itself has no such floor).
+Everything uses the standard library: there is nothing to install.
+
 ```sh
-./run-fixtures.sh     # render every fixture; non-zero exit means something raised
-./make-fixtures.py    # regenerate fixtures (reset times are relative to now)
+python3 -m unittest discover -s tests -t .   # the test suite
+./scripts/run-fixtures.sh                    # render every payload, to check by eye
+./statusline.py < fixtures/full.json         # one payload (after run-fixtures)
 ```
 
-Fixtures cover the full payload plus each degradation path. `make-fixtures.py`
-regenerates them with timestamps relative to the current time, since static
-epochs would drift into the past and stop exercising the same-day /
-this-week / further-out formatting branches.
+```
+tests/
+  payloads.py         stdin payloads: the full one and each degradation path
+  support.py          frozen clock, canned git output, main() run in-process
+  test_formatting.py  token counts, percentages, reset times, cwd
+  test_git.py         every porcelain status code, colours, and a real repo
+  test_layout.py      field order, the exact shrink sequence, icons, NO_COLOR
+  test_cli.py         the script as a separate process, as Claude Code runs it
+scripts/
+  make-fixtures.py    dumps the payloads to fixtures/ (generated, not tracked)
+  run-fixtures.sh     renders each of them
+```
+
+The tests freeze the clock and stub git, so they give the same result on any
+machine and at any time of day. `test_git.py` also runs against a real
+throwaway repository, to catch changes in git's own output. CI
+(`.github/workflows/tests.yml`) runs the suite and the fixture render on
+Python 3.11 and 3.14 for every push and pull request.
 
 ## Not included
 
