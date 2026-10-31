@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Claude Code statusline: subscription usage at a glance.
 
-Reads the statusline JSON payload on stdin and prints one row:
+Reads the statusline JSON payload on stdin and prints one row (text labels
+shown; with `icons` on they become Nerd Font glyphs):
 
-    5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | $0.01
+    ~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] |
+    Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
 
 Quota data comes straight from stdin (`rate_limits`), so this makes no network
-calls and reads no credentials.
+calls and reads no credentials. The only subprocess is one `git status`.
 """
 
 from __future__ import annotations
@@ -14,8 +16,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # --------------------------------------------------------------------------
 # CONFIG
@@ -23,9 +27,11 @@ from datetime import datetime
 
 CONFIG = {
     # Segments, in display order.
+    "show_cwd": True,
     "show_quota": True,
     "show_context": True,
-    "show_cost": True,
+    "show_model": True,
+    "show_git": True,
     # Per-call token detail — off by default, one line has no room for it.
     "show_input_tokens": False,
     "show_cache_split": False,
@@ -37,10 +43,31 @@ CONFIG = {
     "warn_at": 60.0,
     "crit_at": 85.0,
     "colour": True,
+    # Nerd Font glyphs instead of text labels. Turn off in a terminal whose
+    # font lacks them, or they draw as boxes.
+    "icons": True,
     # Layout
     "separator": " | ",
-    "cost_decimals": 2,
     "fallback_width": 80,
+    # A stuck git (huge repo, locked index) must not blank the line.
+    "git_timeout": 0.5,
+}
+
+# Font Awesome codepoints: the most stable across Nerd Font versions.
+ICONS = {
+    "cwd": "",  # nf-fa-folder_open
+    "five_hour": "",  # nf-fa-hourglass_half
+    "seven_day": "",  # nf-fa-calendar
+    "context": "",  # nf-fa-database
+    "model": "",  # nf-fa-microchip
+    "git": "",  # nf-pl-branch
+}
+
+# What `icons: False` shows instead; a missing key means no label at all.
+TEXT_LABELS = {
+    "five_hour": "5h",
+    "seven_day": "Week:",
+    "context": "Context:",
 }
 
 GREEN, YELLOW, RED, DIM, RESET = (
@@ -75,6 +102,20 @@ def use_colour() -> bool:
 
 def paint(text: str, code: str) -> str:
     return f"{code}{text}{RESET}" if use_colour() else text
+
+
+def labelled(key: str, text: str) -> str:
+    """Prefix `text` with the segment's icon, or its text label as fallback."""
+    label = ICONS[key] if CONFIG["icons"] else TEXT_LABELS.get(key, "")
+    return f"{label} {text}" if label else text
+
+
+def at_stage(stage: int, rich: str, sparse: str) -> list[str]:
+    """Variants that keep `rich` until shrink level `stage`, then go `sparse`.
+
+    fit() steps every segment down one variant per level, so padding the rich
+    variant sets the order segments shrink in: stage 1 sheds first."""
+    return [rich] * stage + [sparse]
 
 
 def colour_for(pct: float) -> str:
@@ -182,7 +223,30 @@ def fit(segments: list[tuple[int, list[str]]], width: int) -> str:
 # --------------------------------------------------------------------------
 
 
-def quota_segment(window: dict | None, label: str) -> tuple[int, list[str]] | None:
+def session_dir(data: dict) -> str | None:
+    path = dig(data, "workspace", "current_dir") or data.get("cwd")
+    return path if isinstance(path, str) and path else None
+
+
+def cwd_segment(data: dict) -> tuple[int, list[str]] | None:
+    """Home as '~', deep paths trimmed to '~/…/leaf', the leaf alone when narrow."""
+    path = session_dir(data)
+    if path is None:
+        return None
+    home = os.path.expanduser("~")
+    if path == home or path.startswith(home + "/"):
+        anchor, rest = "~", path[len(home) :].strip("/")
+    else:
+        anchor, rest = "", path.strip("/")
+    parts = rest.split("/") if rest else []
+    if not parts:
+        return (1, [labelled("cwd", anchor or "/")])
+    full = f"{anchor}/{rest}"
+    trimmed = full if len(parts) <= 2 else f"{anchor}/…/{parts[-1]}"
+    return (1, at_stage(3, labelled("cwd", trimmed), labelled("cwd", parts[-1])))
+
+
+def quota_segment(window: dict | None, key: str) -> tuple[int, list[str]] | None:
     """One rate-limit window. Returns None when the window is absent, so an
     unknown quota is omitted rather than rendered as 0%."""
     if not isinstance(window, dict):
@@ -195,11 +259,11 @@ def quota_segment(window: dict | None, label: str) -> tuple[int, list[str]] | No
     except (TypeError, ValueError):
         return None
 
-    compact = f"{label} {paint(fmt_pct(pct), colour_for(pct))}"
+    compact = labelled(key, paint(fmt_pct(pct), colour_for(pct)))
     reset = fmt_reset(window.get("resets_at"))
     # The percentage matters more than the reset time, so on a narrow terminal
     # we shed the reset rather than the whole window.
-    variants = [f"{compact} [{reset}]", compact] if reset else [compact]
+    variants = at_stage(1, f"{compact} [{reset}]", compact) if reset else [compact]
     return (0, variants)
 
 
@@ -208,8 +272,8 @@ def quota_segments(data: dict) -> list[tuple[int, list[str]]]:
     if not isinstance(limits, dict):
         return []
     segs = []
-    for key, label in (("five_hour", "5h"), ("seven_day", "Week:")):
-        seg = quota_segment(limits.get(key), label)
+    for key in ("five_hour", "seven_day"):
+        seg = quota_segment(limits.get(key), key)
         if seg:
             segs.append(seg)
     return segs
@@ -248,14 +312,13 @@ def context_segments(data: dict) -> list[tuple[int, list[str]]]:
 
     used_s, size_s = fmt_tokens(used), fmt_tokens(size)
     if used_s != "—" or size_s != "—":
-        full = f"Context: {used_s}/{size_s}"
-        compact = full
+        full = labelled("context", f"{used_s}/{size_s}")
+        variants = [full]
         if pct is not None:
             shown = paint(fmt_pct(pct), colour_for(pct))
-            full += f" {shown}"
             # On a narrow terminal keep the percentage, shed the raw counts.
-            compact = f"Context: {shown}"
-        segs.append((1, [full, compact]))
+            variants = at_stage(2, f"{full} {shown}", labelled("context", shown))
+        segs.append((0, variants))
 
     if CONFIG["show_input_tokens"] and usage.get("input_tokens") is not None:
         short = f"in {fmt_tokens(usage['input_tokens'])}"
@@ -266,31 +329,110 @@ def context_segments(data: dict) -> list[tuple[int, list[str]]]:
             if w is not None or r is not None:
                 cache = f" (cache w{fmt_tokens(w or 0)} r{fmt_tokens(r or 0)})"
                 variants = [short + cache, short]
-        segs.append((4, variants))
+        segs.append((5, variants))
 
     if CONFIG["show_output_tokens"] and usage.get("output_tokens") is not None:
-        segs.append((3, [f"out {fmt_tokens(usage['output_tokens'])}"]))
-
-    if CONFIG["show_cost"]:
-        cost = dig(data, "cost", "total_cost_usd")
-        if cost is not None:
-            try:
-                segs.append((2, [f"${float(cost):.{CONFIG['cost_decimals']}f}"]))
-            except (TypeError, ValueError):
-                pass
+        segs.append((4, [f"out {fmt_tokens(usage['output_tokens'])}"]))
 
     if CONFIG["show_duration"]:
         dur = fmt_duration(dig(data, "cost", "total_duration_ms"))
         if dur:
-            segs.append((5, [dur]))
+            segs.append((6, [dur]))
 
     if CONFIG["show_lines_changed"]:
         added = dig(data, "cost", "total_lines_added")
         removed = dig(data, "cost", "total_lines_removed")
         if added or removed:
-            segs.append((6, [f"+{added or 0}/-{removed or 0}"]))
+            segs.append((7, [f"+{added or 0}/-{removed or 0}"]))
 
     return segs
+
+
+def model_segment(data: dict) -> tuple[int, list[str]] | None:
+    name = dig(data, "model", "display_name") or dig(data, "model", "id")
+    if not isinstance(name, str) or not name:
+        return None
+    short = labelled("model", name)
+    # Absent before the first turn and on models without effort support.
+    effort = dig(data, "effort", "level")
+    if isinstance(effort, str) and effort:
+        return (2, at_stage(5, f"{short} ({effort})", short))
+    return (2, [short])
+
+
+def git_status(path: str) -> str | None:
+    """`git status` porcelain v2 output, or None outside a repo or on any failure."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", path, "status", "--porcelain=v2", "--branch"],
+            capture_output=True,
+            text=True,
+            timeout=CONFIG["git_timeout"],
+            # Read-only: don't take the index lock Claude's own git calls need.
+            env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout if out.returncode == 0 else None
+
+
+def repo_name(path: str) -> str | None:
+    p = Path(path).resolve()
+    for d in (p, *p.parents):
+        if (d / ".git").exists():
+            return d.name
+    return None
+
+
+def git_segment(data: dict) -> tuple[int, list[str]] | None:
+    """'repo:branch' plus Starship's symbols: !modified +staged ?untracked
+    ✘deleted ⇡ahead ⇣behind, each omitted at zero."""
+    path = session_dir(data)
+    status = git_status(path) if path else None
+    if status is None:
+        return None
+
+    head = oid = None
+    ahead = behind = modified = staged = untracked = deleted = 0
+    for line in status.splitlines():
+        if line.startswith("# branch.oid "):
+            oid = line.split()[2]
+        elif line.startswith("# branch.head "):
+            head = line.split()[2]
+        elif line.startswith("# branch.ab "):
+            a, b = line.split()[2:4]
+            ahead, behind = int(a[1:]), int(b[1:])
+        elif line.startswith("? "):
+            untracked += 1
+        elif line[:2] in ("1 ", "2 ", "u "):
+            # XY: index (staged) status, then worktree status; '.' is unchanged.
+            x, y = line[2], line[3]
+            if "D" in (x, y):
+                deleted += 1
+            if line[0] == "u":
+                modified += 1  # merge conflict: needs your attention like an edit
+                continue
+            if x not in ".D":
+                staged += 1
+            if y in "MT":
+                modified += 1
+
+    if head == "(detached)" and oid:
+        head = f"@{oid[:7]}"
+    if not head:
+        return None
+    repo = repo_name(path)
+    base = labelled("git", f"{repo}:{head}" if repo else head)
+    counts = (
+        ("!", modified),
+        ("+", staged),
+        ("?", untracked),
+        ("✘", deleted),
+        ("⇡", ahead),
+        ("⇣", behind),
+    )
+    symbols = " ".join(f"{sym}{n}" for sym, n in counts if n)
+    return (3, at_stage(4, f"{base} {symbols}", base) if symbols else [base])
 
 
 # --------------------------------------------------------------------------
@@ -313,11 +455,20 @@ def main() -> None:
     if not isinstance(data, dict):
         data = {}
 
+    # Priority decides what drops when even the sparsest variants overflow:
+    # highest number first, so git, then model, then cwd; quota and context
+    # (priority 0) never drop.
     segments: list[tuple[int, list[str]]] = []
+    if CONFIG["show_cwd"]:
+        segments += filter(None, [cwd_segment(data)])
     if CONFIG["show_quota"]:
         segments += quota_segments(data)
     if CONFIG["show_context"]:
         segments += context_segments(data)
+    if CONFIG["show_model"]:
+        segments += filter(None, [model_segment(data)])
+    if CONFIG["show_git"]:
+        segments += filter(None, [git_segment(data)])
 
     if not segments:
         return  # nothing known yet — print nothing rather than an empty shell

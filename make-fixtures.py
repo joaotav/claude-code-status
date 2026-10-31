@@ -19,13 +19,14 @@ DAY = 24 * HOUR
 
 def base():
     return {
-        "cwd": "/home/joao/Programming/claude-usage-widget",
+        "cwd": str(HERE.resolve()),
         "session_id": "fixture-session-0001",
         "transcript_path": "/tmp/transcript.jsonl",
-        "model": {"id": "claude-opus-5", "display_name": "Opus"},
+        "model": {"id": "claude-opus-5-5", "display_name": "Opus 5.5"},
+        "effort": {"level": "high"},
         "workspace": {
-            "current_dir": "/home/joao/Programming/claude-usage-widget",
-            "project_dir": "/home/joao/Programming/claude-usage-widget",
+            "current_dir": str(HERE.resolve()),
+            "project_dir": str(HERE.resolve()),
             "added_dirs": [],
         },
         "version": "2.1.220",
@@ -87,12 +88,26 @@ f = base()
 f["context_window"]["used_percentage"] = None
 FIXTURES["derived-pct"] = f
 
-# Brand new session: no quota yet, no context yet. Should print nothing at all.
+# Brand new session: no quota yet, no context yet, no effort until the first
+# turn. Only cwd, model and git remain.
 f = base()
 del f["rate_limits"]
 del f["context_window"]
 del f["cost"]
+del f["effort"]
 FIXTURES["empty"] = f
+
+# Model without effort support: the model shows alone.
+f = base()
+del f["effort"]
+FIXTURES["no-effort"] = f
+
+# cwd shapes: home itself, a deep path outside home, the root. None of these
+# is a git repo, so the git segment drops too.
+for name, path in (("cwd-home", str(pathlib.Path.home())), ("cwd-deep", "/usr/share/doc/python3"), ("cwd-root", "/")):
+    f = base()
+    f["cwd"] = f["workspace"]["current_dir"] = path
+    FIXTURES[name] = f
 
 # High usage: red thresholds and the >200k marker.
 f = base()

@@ -1,14 +1,17 @@
 {
-  "cwd": "/home/joao/Programming/claude-usage-widget",
+  "cwd": "/home/joao/Programming/claude-code-status",
   "session_id": "fixture-session-0001",
   "transcript_path": "/tmp/transcript.jsonl",
   "model": {
-    "id": "claude-opus-5",
-    "display_name": "Opus"
+    "id": "claude-opus-5-5",
+    "display_name": "Opus 5.5"
+  },
+  "effort": {
+    "level": "high"
   },
   "workspace": {
-    "current_dir": "/home/joao/Programming/claude-usage-widget",
-    "project_dir": "/home/joao/Programming/claude-usage-widget",
+    "current_dir": "/home/joao/Programming/claude-code-status",
+    "project_dir": "/home/joao/Programming/claude-code-status",
     "added_dirs": []
   },
   "version": "2.1.220",
