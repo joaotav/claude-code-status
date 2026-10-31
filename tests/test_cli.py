@@ -1,0 +1,54 @@
+"""End to end: the script as Claude Code runs it, a separate process with the
+payload on stdin. A raise there would blank the status line."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+import unittest
+
+from tests.payloads import ROOT, all_payloads
+
+SCRIPT = ROOT / "statusline.py"
+
+
+def run(stdin: str, columns: int = 120) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        input=stdin,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "COLUMNS": str(columns)},
+        timeout=10,
+    )
+
+
+class CliTest(unittest.TestCase):
+    def test_every_payload_renders_without_error(self):
+        for name, data in all_payloads(time.time()).items():
+            for columns in (40, 80, 200):
+                with self.subTest(name, columns=columns):
+                    result = run(json.dumps(data), columns)
+                    self.assertEqual(result.returncode, 0)
+                    self.assertEqual(result.stderr, "")
+                    self.assertNotIn("usage unavailable", result.stdout)
+
+    def test_empty_stdin_prints_nothing(self):
+        result = run("")
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_invalid_json_degrades_to_a_marker(self):
+        result = run("{not json")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("usage unavailable", result.stdout)
+
+    def test_non_object_json_prints_nothing(self):
+        result = run("[1, 2, 3]")
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+
+if __name__ == "__main__":
+    unittest.main()
