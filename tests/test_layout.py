@@ -29,7 +29,7 @@ class OrderTest(unittest.TestCase):
         self.assertEqual(
             line,
             "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • "
-            "Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • "
+            "Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • "
             "repo:main !1 ?1 ⇡2 • Account: me@example.com",
         )
 
@@ -54,9 +54,9 @@ class ShrinkTest(unittest.TestCase):
     model, cwd."""
 
     EXPECTED = [
-        "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 1. reset times
-        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 2. context's raw counts
         "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 3. cwd down to its leaf

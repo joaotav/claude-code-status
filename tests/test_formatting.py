@@ -29,6 +29,37 @@ class FmtTokensTest(unittest.TestCase):
                 self.assertEqual(statusline.fmt_tokens(value), "—")
 
 
+class FmtTokensWholeTest(unittest.TestCase):
+    """The context field's counts: whole numbers, halves rounded up."""
+
+    def test_scales(self):
+        cases = {
+            999: "999",
+            15500: "16k",
+            476500: "477k",
+            200000: "200k",
+            999_499: "999k",
+            999_500: "1M",  # rounds to 1000k, so it moves up a unit
+            1_250_000: "1M",
+            1_500_000: "2M",
+        }
+        for n, expected in cases.items():
+            with self.subTest(n=n):
+                self.assertEqual(statusline.fmt_tokens_whole(n), expected)
+
+    def test_non_numeric_is_a_dash(self):
+        self.assertEqual(statusline.fmt_tokens_whole("big"), "—")
+
+
+class ContextFieldTest(unittest.TestCase):
+    def test_percentage_is_whole(self):
+        data = {"context_window": {"context_window_size": 200000, "total_input_tokens": 15500, "used_percentage": 7.8}}
+        with environment():
+            variants = statusline.context_segments(data)[0][1]
+        self.assertEqual(variants[0], "Context: 16k/200k 8%")
+        self.assertEqual(variants[-1], "Context: 8%")
+
+
 class FmtPctTest(unittest.TestCase):
     def test_drops_a_decimal_that_adds_nothing(self):
         self.assertEqual(statusline.fmt_pct(23.0), "23%")

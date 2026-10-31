@@ -6,7 +6,7 @@ how much of your system's memory is in use, the state of your git repository,
 and which account is logged in.
 
 ```
-~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 476.5k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
+~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 477k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
 ```
 
 Shown here with text labels. By default each label is a Nerd Font icon.
@@ -18,7 +18,7 @@ Shown here with text labels. By default each label is a Nerd Font icon.
 | Directory | `~/…/AI Productivity` | Where the session is working. Home is `~`; deep paths keep only the last folder. |
 | 5-hour limit | `5h 23.5% [19:45]` | Share of your 5-hour usage window spent, and when it resets. |
 | Weekly limit | `Week: 41.2% [Thu 14:00]` | Share of your weekly limit spent, and when it resets. |
-| Context | `Context: 476.5k/1M 48%` | How full the conversation's context window is. |
+| Context | `Context: 477k/1M 48%` | How full the conversation's context window is. |
 | Model | `Opus 5.5 (high)` | The model, and its effort level once the first turn has set it. |
 | Memory | `RAM: 7.6GB/14.8GB` | System RAM in use out of the total, in binary units as `free -h` and system monitors count them. Linux and macOS. |
 | Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and what has changed. Hidden outside a repository. |
@@ -192,7 +192,7 @@ Off by default, for lack of room on one line:
 The line reads the terminal's width and shrinks one step at a time:
 
 ```
-230 cols  ~/Programming/claude-code-status • 5h 23.5% [18:44] • Week: 41.2% [Wed 16:44] • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.8GB/14.8GB • claude-code-status:main !6 ?1 • Account: me@example.com
+230 cols  ~/Programming/claude-code-status • 5h 23.5% [18:44] • Week: 41.2% [Wed 16:44] • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.8GB/14.8GB • claude-code-status:main !6 ?1 • Account: me@example.com
 166 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.8GB/14.8GB • claude-code-status:main !6 ?1 • Account: me@example.com
 146 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
 139 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main

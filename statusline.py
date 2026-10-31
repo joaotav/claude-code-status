@@ -158,6 +158,24 @@ def fmt_pct(pct: float) -> str:
     return f"{pct:.0f}%" if abs(pct - round(pct)) < 0.05 else f"{pct:.1f}%"
 
 
+def half_up(x: float) -> int:
+    # round() goes to the even neighbour (476.5 -> 476); counts read better
+    # rounding halves up.
+    return int(x + 0.5)
+
+
+def fmt_tokens_whole(n) -> str:
+    """Whole numbers, for the context field: 15500 -> '16k', 476500 -> '477k',
+    1250000 -> '1M'."""
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        return "—"
+    if n < 1000:
+        return str(n)
+    k = half_up(n / 1000)
+    return f"{k}k" if k < 1000 else f"{half_up(n / 1_000_000)}M"
+
 
 def fmt_reset(epoch) -> str | None:
     """Absolute local reset time. Same day -> '19:45', this week -> 'Thu 14:00',
@@ -323,12 +341,13 @@ def context_segments(data: dict) -> list[tuple[int, list[str]]]:
     except (TypeError, ValueError):
         pct = None
 
-    used_s, size_s = fmt_tokens(used), fmt_tokens(size)
+    # Whole numbers here: the decimals took room without changing a decision.
+    used_s, size_s = fmt_tokens_whole(used), fmt_tokens_whole(size)
     if used_s != "—" or size_s != "—":
         full = labelled("context", f"{used_s}/{size_s}")
         variants = [full]
         if pct is not None:
-            shown = paint(fmt_pct(pct), colour_for(pct))
+            shown = paint(f"{half_up(pct)}%", colour_for(pct))
             # On a narrow terminal keep the percentage, shed the raw counts.
             variants = at_stage(2, f"{full} {shown}", labelled("context", shown))
         segs.append((0, variants))
