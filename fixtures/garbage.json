@@ -1,0 +1,15 @@
+{
+  "rate_limits": {
+    "five_hour": "not-a-dict",
+    "seven_day": {
+      "used_percentage": "abc"
+    }
+  },
+  "context_window": {
+    "context_window_size": "big",
+    "current_usage": []
+  },
+  "cost": {
+    "total_cost_usd": "free"
+  }
+}

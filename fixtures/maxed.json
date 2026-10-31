@@ -1,0 +1,49 @@
+{
+  "cwd": "/home/joao/Programming/claude-usage-widget",
+  "session_id": "fixture-session-0001",
+  "transcript_path": "/tmp/transcript.jsonl",
+  "model": {
+    "id": "claude-opus-5",
+    "display_name": "Opus"
+  },
+  "workspace": {
+    "current_dir": "/home/joao/Programming/claude-usage-widget",
+    "project_dir": "/home/joao/Programming/claude-usage-widget",
+    "added_dirs": []
+  },
+  "version": "2.1.220",
+  "output_style": {
+    "name": "default"
+  },
+  "cost": {
+    "total_cost_usd": 4.8231,
+    "total_duration_ms": 135000,
+    "total_api_duration_ms": 2300,
+    "total_lines_added": 156,
+    "total_lines_removed": 23
+  },
+  "context_window": {
+    "total_input_tokens": 210000,
+    "total_output_tokens": 1200,
+    "context_window_size": 200000,
+    "used_percentage": 96,
+    "remaining_percentage": 92,
+    "current_usage": {
+      "input_tokens": 120000,
+      "output_tokens": 8400,
+      "cache_creation_input_tokens": 60000,
+      "cache_read_input_tokens": 30000
+    }
+  },
+  "exceeds_200k_tokens": true,
+  "rate_limits": {
+    "five_hour": {
+      "used_percentage": 94.0,
+      "resets_at": 1785781505
+    },
+    "seven_day": {
+      "used_percentage": 71.8,
+      "resets_at": 1786119905
+    }
+  }
+}

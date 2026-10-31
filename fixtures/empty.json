@@ -1,0 +1,19 @@
+{
+  "cwd": "/home/joao/Programming/claude-usage-widget",
+  "session_id": "fixture-session-0001",
+  "transcript_path": "/tmp/transcript.jsonl",
+  "model": {
+    "id": "claude-opus-5",
+    "display_name": "Opus"
+  },
+  "workspace": {
+    "current_dir": "/home/joao/Programming/claude-usage-widget",
+    "project_dir": "/home/joao/Programming/claude-usage-widget",
+    "added_dirs": []
+  },
+  "version": "2.1.220",
+  "output_style": {
+    "name": "default"
+  },
+  "exceeds_200k_tokens": false
+}
