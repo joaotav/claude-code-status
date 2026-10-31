@@ -18,7 +18,8 @@ A Claude Code statusline: where you are, subscription usage without running
 - **Git**: `repo:branch` (or `@sha` when detached), then Starship's symbols,
   each hidden at zero: `!` modified, `+` staged, `?` untracked, `✘` deleted,
   `⇡` ahead of upstream, `⇣` behind. Merge conflicts count as `!`. Hidden
-  outside a repository.
+  outside a repository. Coloured yellow, green, blue, red, cyan and magenta
+  in that order, as `git status` and Powerlevel10k colour the file states.
 
 It renders in its own row at the bottom of the Claude Code window, above the
 built-in footer badges. It does not replace them.

@@ -70,10 +70,13 @@ TEXT_LABELS = {
     "context": "Context:",
 }
 
-GREEN, YELLOW, RED, DIM, RESET = (
+GREEN, YELLOW, RED, BLUE, MAGENTA, CYAN, DIM, RESET = (
     "\033[32m",
     "\033[33m",
     "\033[31m",
+    "\033[34m",
+    "\033[35m",
+    "\033[36m",
     "\033[2m",
     "\033[0m",
 )
@@ -423,15 +426,17 @@ def git_segment(data: dict) -> tuple[int, list[str]] | None:
         return None
     repo = repo_name(path)
     base = labelled("git", f"{repo}:{head}" if repo else head)
+    # Staged green, unstaged yellow and untracked blue, as `git status` and
+    # Powerlevel10k colour them; arrows apart so push and pull read distinctly.
     counts = (
-        ("!", modified),
-        ("+", staged),
-        ("?", untracked),
-        ("✘", deleted),
-        ("⇡", ahead),
-        ("⇣", behind),
+        ("!", modified, YELLOW),
+        ("+", staged, GREEN),
+        ("?", untracked, BLUE),
+        ("✘", deleted, RED),
+        ("⇡", ahead, CYAN),
+        ("⇣", behind, MAGENTA),
     )
-    symbols = " ".join(f"{sym}{n}" for sym, n in counts if n)
+    symbols = " ".join(paint(f"{sym}{n}", code) for sym, n, code in counts if n)
     return (3, at_stage(4, f"{base} {symbols}", base) if symbols else [base])
 
 
