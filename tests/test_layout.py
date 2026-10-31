@@ -94,6 +94,67 @@ class ShrinkTest(unittest.TestCase):
             self.assertEqual(run_main(payload(), columns=20), self.EXPECTED[-1])
 
 
+class WrapTest(unittest.TestCase):
+    """With two lines allowed, fields move to the second line before anything
+    is shed, and the one-line shrink takes over only when two lines are not
+    enough."""
+
+    FULL = ShrinkTest.EXPECTED[0]
+    FIELDS = FULL.split(" • ")
+
+    def layouts(self):
+        """Each width, from wide to narrow, with the lines laid out there."""
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY, max_lines=2):
+            for width in range(len(self.FULL) + 10, 19, -1):
+                yield width, run_main(payload(), columns=width).split("\n")
+
+    def fits_on_two_lines(self, width):
+        """Whether the full line could be split into two lines of `width`."""
+        return any(
+            max(len(" • ".join(self.FIELDS[:i])), len(" • ".join(self.FIELDS[i:]))) <= width
+            for i in range(1, len(self.FIELDS))
+        )
+
+    def test_wide_enough_is_one_line(self):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY, max_lines=2):
+            self.assertEqual(run_main(payload(), columns=len(self.FULL)), self.FULL)
+
+    def test_moves_to_a_second_line_before_shedding(self):
+        for width, lines in self.layouts():
+            if len(self.FULL) > width and self.fits_on_two_lines(width):
+                with self.subTest(width=width):
+                    self.assertEqual(len(lines), 2)
+                    self.assertEqual(" • ".join(lines), self.FULL)
+
+    def test_sheds_only_once_two_lines_are_not_enough(self):
+        for width, lines in self.layouts():
+            if " • ".join(lines) != self.FULL:
+                with self.subTest(width=width):
+                    self.assertFalse(self.fits_on_two_lines(width))
+
+    def test_never_more_than_two_lines_and_each_fits(self):
+        floor = len(ShrinkTest.EXPECTED[-1])
+        for width, lines in self.layouts():
+            with self.subTest(width=width):
+                self.assertLessEqual(len(lines), 2)
+                if width >= floor:
+                    self.assertTrue(all(len(line) <= width for line in lines))
+
+    def test_fields_keep_their_order(self):
+        # Each field by its label; the directory has none and changes as it
+        # shortens, so it is whatever matches no label.
+        labels = ["5h", "Week:", "Context:", "Opus", "RAM:", "repo:", "Account:"]
+        order = ["cwd"] + labels
+
+        def field(text):
+            return next((label for label in labels if text.startswith(label)), "cwd")
+
+        for width, lines in self.layouts():
+            shown = [field(f) for f in " • ".join(lines).split(" • ")]
+            with self.subTest(width=width):
+                self.assertEqual(shown, [f for f in order if f in shown])
+
+
 class LabelsAndColourTest(unittest.TestCase):
     def test_icons_replace_text_labels(self):
         with environment(icons=True, git=GIT, account=ACCOUNT, memory=MEMORY):

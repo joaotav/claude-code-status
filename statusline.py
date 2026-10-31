@@ -53,6 +53,10 @@ CONFIG = {
     "icons": True,
     # Layout. The separator is drawn dim, so the values stand out.
     "separator": " • ",
+    # When the terminal is too narrow, move fields onto a second line before
+    # shedding anything. 1 keeps everything on one line, dropping detail and
+    # then fields instead.
+    "max_lines": 2,
     "fallback_width": 80,
     # A stuck git (huge repo, locked index) must not blank the line.
     "git_timeout": 0.5,
@@ -212,34 +216,52 @@ def visible_len(text: str) -> int:
     return len(ANSI_RE.sub("", text))
 
 
-def fit(segments: list[tuple[int, list[str]]], width: int) -> str:
-    """Join segments to fit `width`, shrinking in two stages.
+def fit(segments: list[tuple[int, list[str]]], width: int, max_lines: int = 1) -> str:
+    """Lay segments out in at most `max_lines` lines of `width`, shrinking in
+    two stages; the lines come back joined by newlines.
 
     Each segment carries one or more variants, richest first. First try every
     segment at its richest variant, then step all segments down a variant at a
     time. Only once everything is at its sparsest do we start dropping whole
-    segments, highest priority number first. Priority 0 is never dropped, so a
-    row that still overflows is emitted as-is rather than mangled.
+    segments, highest priority number first. At each step the fields are
+    packed in order onto as few lines as they need, so a second line is used
+    before anything is shed. Priority 0 is never dropped, so a layout that
+    still overflows is emitted as-is rather than mangled.
     """
     sep = paint(CONFIG["separator"], DIM)
 
-    def render(segs, level):
-        return sep.join(v[min(level, len(v) - 1)] for _, v in segs)
+    def pack(texts):
+        """Fields in order, as many to a line as fit; a field is never split."""
+        lines: list[list[str]] = [[]]
+        for text in texts:
+            if lines[-1] and visible_len(sep.join(lines[-1] + [text])) > width:
+                lines.append([])
+            lines[-1].append(text)
+        return [sep.join(line) for line in lines]
+
+    def attempt(segs, level):
+        lines = pack([v[min(level, len(v) - 1)] for _, v in segs])
+        fits = len(lines) <= max_lines and all(visible_len(line) <= width for line in lines)
+        return lines, fits
+
+    def overflowing(lines):
+        # Nothing left to shed: keep the line count, let the last line run long.
+        return "\n".join(lines[: max_lines - 1] + [sep.join(lines[max_lines - 1 :])])
 
     depth = max((len(v) for _, v in segments), default=1)
     for level in range(depth):
-        line = render(segments, level)
-        if visible_len(line) <= width:
-            return line
+        lines, fits = attempt(segments, level)
+        if fits:
+            return "\n".join(lines)
 
     kept = list(segments)
     while kept:
-        line = render(kept, depth - 1)
-        if visible_len(line) <= width:
-            return line
+        lines, fits = attempt(kept, depth - 1)
+        if fits:
+            return "\n".join(lines)
         droppable = [p for p, _ in kept if p > 0]
         if not droppable:
-            return line
+            return overflowing(lines)
         worst = max(droppable)
         # Drop one at a time, last occurrence first, for a stable shrink order.
         for i in range(len(kept) - 1, -1, -1):
@@ -591,9 +613,9 @@ def main() -> None:
 
     if not segments:
         return  # nothing known yet — print nothing rather than an empty shell
-    line = fit(segments, terminal_width())
-    if line:
-        print(line)
+    lines = fit(segments, terminal_width(), max(1, CONFIG["max_lines"]))
+    if lines:
+        print(lines)
 
 
 if __name__ == "__main__":

@@ -71,9 +71,11 @@ def environment(
     repo: str | None = "repo",
     account: str | None = None,
     memory: tuple[int, int] | None = None,
+    max_lines: int = 1,
 ) -> ExitStack:
     """Patch everything a render depends on outside its payload: the clock,
-    HOME, NO_COLOR, the icons switch, git, the logged-in account and memory."""
+    HOME, NO_COLOR, the icons and line switches, git, the logged-in account
+    and memory. One line by default, the layout most tests describe."""
     stack = ExitStack()
     stack.enter_context(mock.patch.object(statusline, "datetime", FrozenDateTime))
     env = {"HOME": HOME}
@@ -82,7 +84,9 @@ def environment(
     stack.enter_context(mock.patch.dict(os.environ, env))
     if colour:
         os.environ.pop("NO_COLOR", None)  # restored by patch.dict on exit
-    stack.enter_context(mock.patch.dict(statusline.CONFIG, {"icons": icons, "colour": colour}))
+    stack.enter_context(
+        mock.patch.dict(statusline.CONFIG, {"icons": icons, "colour": colour, "max_lines": max_lines})
+    )
     stack.enter_context(mock.patch.object(statusline, "git_status", return_value=git))
     stack.enter_context(mock.patch.object(statusline, "repo_name", return_value=repo))
     stack.enter_context(mock.patch.object(statusline, "account_email", return_value=account))

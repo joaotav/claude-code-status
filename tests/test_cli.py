@@ -39,6 +39,16 @@ class CliTest(unittest.TestCase):
                     self.assertEqual(result.stderr, "")
                     self.assertNotIn("usage unavailable", result.stdout)
 
+    def test_wraps_onto_two_lines_by_default(self):
+        # The shipped config, not a patched one: wrap, and never past two lines.
+        full = json.dumps(all_payloads(time.time())["full"])
+        for columns in (80, 100):
+            with self.subTest(columns=columns):
+                self.assertEqual(len(run(full, columns).stdout.splitlines()), 2)
+        for columns in range(20, 260, 7):
+            with self.subTest(columns=columns):
+                self.assertLessEqual(len(run(full, columns).stdout.splitlines()), 2)
+
     def test_empty_stdin_shows_at_most_system_memory(self):
         # Memory is the one field that needs no payload; nothing else may show.
         result = run("")
