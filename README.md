@@ -1,45 +1,106 @@
 # claude-code-status
 
-A Claude Code statusline: where you are, subscription usage without running
-`/usage`, the model, and the git state.
+A status line for Claude Code that shows, in one row under the prompt, where
+you are, how much of your subscription you have used, which model you are on,
+and the state of your git repository.
 
 ```
 ~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
 ```
 
-(Shown with text labels. By default the labels are Nerd Font icons: see
-`icons` below.)
+Shown here with text labels. By default each label is a Nerd Font icon.
 
-- **cwd**: home shown as `~`, deep paths trimmed to `~/…/leaf`.
-- **`5h` and `Week:`**: your Pro/Max quota, percentage consumed, with the
-  reset time in brackets.
-- **`Context:`**: the live context window.
-- **Model**: with the effort level once the first turn has set it.
-- **Git**: `repo:branch` (or `@sha` when detached), then Starship's symbols,
-  each hidden at zero: `!` modified, `+` staged, `?` untracked, `✘` deleted,
-  `⇡` ahead of upstream, `⇣` behind. Merge conflicts count as `!`. Hidden
-  outside a repository. Coloured yellow, green, blue, red, cyan and magenta
-  in that order, as `git status` and Powerlevel10k colour the file states.
+## What it shows
 
-It renders in its own row at the bottom of the Claude Code window, above the
-built-in footer badges. It does not replace them.
+| Field | Example | What it tells you |
+|---|---|---|
+| Directory | `~/…/AI Productivity` | Where the session is working. Home is `~`; deep paths keep only the last folder. |
+| 5-hour limit | `5h 23.5% [19:45]` | Share of your 5-hour usage window spent, and when it resets. |
+| Weekly limit | `Week: 41.2% [Thu 14:00]` | Share of your weekly limit spent, and when it resets. |
+| Context | `Context: 476.5k/1M 48%` | How full the conversation's context window is. |
+| Model | `Opus 5.5 (high)` | The model, and its effort level once the first turn has set it. |
+| Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and what has changed. Hidden outside a repository. |
 
-## How it works
+Percentages turn **yellow from 60%** and **red from 85%**.
 
-Claude Code passes session data to the statusline command as JSON on stdin, and
-that payload already includes the quota, context, model, effort and directory.
-So this script makes **no network calls, reads no credentials, and has no
-daemon or cache**. Its one subprocess is a single `git status
---porcelain=v2 --branch`, which gives branch, ahead/behind and file states in
-one call. It runs with a 0.5 s timeout and `GIT_OPTIONAL_LOCKS=0`, so it never
-takes the index lock Claude's own git commands need. A render takes ~37 ms,
-against Claude Code's 300 ms debounce.
+The git symbols are the ones [Starship](https://starship.rs) and
+Powerlevel10k use, each shown only when its count is above zero:
+
+| Symbol | Meaning | Colour |
+|---|---|---|
+| `!` | modified, not staged (merge conflicts count here too) | yellow |
+| `+` | staged | green |
+| `?` | untracked | blue |
+| `✘` | deleted | red |
+| `⇡` | commits to push | cyan |
+| `⇣` | commits to pull | magenta |
+
+A detached HEAD shows as `@a1b2c3d` in place of the branch.
+
+## Design choices
+
+- **A status line, not a mod.** Claude Code mods are more powerful, but under
+  the prompt they can only add plain text that cannot fit itself to the
+  terminal's width, or replace Claude Code's own hint line. A status line
+  command gets colour, width fitting, and every field above from what Claude
+  Code already sends it.
+- **Nothing is fetched.** Every value comes from the data Claude Code passes
+  in, or from one local `git status`. There is no daemon, cache or network
+  call to break or slow down, and a render takes about 40 ms.
+- **Missing means hidden, never zero.** A value Claude Code has not reported
+  yet is left out rather than shown as `0%`, so the line never claims
+  something it does not know.
+- **Usage always stays on screen.** On a narrow terminal the line sheds detail
+  first (reset times, raw token counts, the full path, git symbols, effort),
+  then whole fields (git, then model, then directory). The quota and context
+  are never dropped.
+- **Reset times are clock times** (`19:45`, `Thu 14:00`), not countdowns, so
+  they stay correct between refreshes.
+- **No session cost.** On a subscription it is an API-price estimate, not a
+  bill, so it would take space without telling you anything you can act on.
+- **Icons with a fallback.** The icons are Font Awesome glyphs, the set least
+  likely to move between Nerd Font versions. Turn `icons` off and the text
+  labels come back, for terminals without a Nerd Font (see
+  [Icons and Nerd Fonts](#icons-and-nerd-fonts)).
+- **Familiar git symbols and colours.** They match Starship and
+  Powerlevel10k, so they read the same as a shell prompt, and the colours
+  follow `git status`: staged green, unstaged yellow, untracked blue.
+
+## Privacy
+
+The script reads only what it needs, keeps nothing, and sends nothing
+anywhere.
+
+**What it reads**
+
+- The JSON Claude Code passes it on stdin. Of that, it uses the directory,
+  model, effort, usage limits and context size. It ignores the rest,
+  including the session id and the transcript path, and never opens the
+  transcript.
+- Your repository's state, through one `git status` in the session's
+  directory, plus a check for the `.git` folder to name the repository.
+
+**What it never does**
+
+- Make network requests.
+- Read credentials, tokens or Claude's configuration files.
+- Write files, logs or any state; each run starts from nothing.
+- Change your repository. `git status` runs read-only, without taking the
+  index lock that Claude's own git commands need, and gives up after 0.5 s.
+
+It depends only on Python's standard library, so there are no third-party
+packages to trust.
+
+**On screen:** the directory and repository names are visible to anyone who
+sees your terminal. When screen sharing, you can hide them with `show_cwd`
+and `show_git`.
 
 ## Install
 
-Requires Python 3 and Claude Code v2.1.153+ (for terminal-width detection).
+Requires Python 3 and Claude Code v2.1.153 or later. The icons need a Nerd
+Font: see [Icons and Nerd Fonts](#icons-and-nerd-fonts).
 
-Add to `~/.claude/settings.json`:
+Add this to `~/.claude/settings.json`:
 
 ```json
 {
@@ -52,127 +113,103 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-`refreshInterval` keeps the percentages current while the session is idle —
-event-driven updates go quiet when nothing is happening. Remove it if you only
-want updates on new messages.
+`refreshInterval` keeps the numbers current while the session is idle. Remove
+it to update only when a message is sent.
+
+## Icons and Nerd Fonts
+
+The status line is designed for a [Nerd Font](https://www.nerdfonts.com),
+whose icons it uses as field labels. Without one, the icons show as boxes:
+set `icons` to `False` and it falls back to text labels (`5h`, `Week:`,
+`Context:`) that work in any font.
 
 ## Configuration
 
-Edit the `CONFIG` block at the top of `statusline.py`:
+Edit the `CONFIG` block at the top of `statusline.py`.
 
 | Key | Default | Effect |
 |---|---|---|
-| `show_cwd` | `True` | `~/…/AI Productivity` |
-| `show_quota` | `True` | `5h ...` and `Week: ...` |
-| `show_context` | `True` | `Context: 476.5k/1M 48%` |
-| `show_model` | `True` | `Opus 5.5 (high)` |
-| `show_git` | `True` | `obsidian_vault:main !2 +1 ?1 ⇡2` |
-| `show_input_tokens` | `False` | `in 8.5k` — per-call fresh input |
-| `show_cache_split` | `False` | `(cache w5k r2k)` — written / read |
-| `show_output_tokens` | `False` | `out 1.2k` |
-| `show_duration` | `False` | Session wall-clock time |
-| `show_lines_changed` | `False` | `+156/-23` |
-| `warn_at` | `60.0` | Percent at which numbers turn yellow |
-| `crit_at` | `85.0` | Percent at which numbers turn red |
-| `colour` | `True` | ANSI colour (also disabled by `NO_COLOR`) |
-| `icons` | `True` | Nerd Font glyphs instead of text labels (see below) |
-| `separator` | `" \| "` | Between segments |
-| `git_timeout` | `0.5` | Seconds before a slow `git status` is abandoned and the git field hidden |
+| `show_cwd` | `True` | Directory |
+| `show_quota` | `True` | 5-hour and weekly limits |
+| `show_context` | `True` | Context window |
+| `show_model` | `True` | Model and effort |
+| `show_git` | `True` | Repository, branch and symbols |
+| `icons` | `True` | Nerd Font icons; `False` for text labels |
+| `colour` | `True` | Colour; the `NO_COLOR` variable also turns it off |
+| `warn_at` | `60.0` | Percentage that turns yellow |
+| `crit_at` | `85.0` | Percentage that turns red |
+| `separator` | `" \| "` | Text between fields |
+| `git_timeout` | `0.5` | Seconds before a slow `git status` is abandoned |
 
-### Icons
+Off by default, for lack of room on one line:
 
-With `icons` on, each field gets a Nerd Font glyph: folder (cwd), hourglass
-(`5h`), calendar (`Week:`), database (`Context:`), microchip (model), branch
-(git). They are Font Awesome codepoints, the set least likely to move between
-Nerd Font versions. In a terminal without a Nerd Font they draw as boxes, so
-set `icons` to `False` there to get the text labels back.
+| Key | Shows |
+|---|---|
+| `show_input_tokens` | `in 8.5k`: fresh input of the last request |
+| `show_cache_split` | `(cache w5k r2k)`: tokens written to and read from the prompt cache |
+| `show_output_tokens` | `out 1.2k`: tokens generated by the last request |
+| `show_duration` | How long the session has run |
+| `show_lines_changed` | `+156/-23`: lines Claude added and removed |
 
-The per-call token fields are off by default because one line has no room for
-them. They describe the **most recent API call**, not session totals:
-`in` is fresh uncached input, `w` is tokens written to the prompt cache, `r` is
-tokens read back from it, `out` is generated tokens. A large `r` next to a tiny
-`in` is the healthy pattern — the conversation prefix is being reused rather
-than reprocessed.
+## When data is missing
 
-## Behaviour when data is missing
-
-Nothing is ever invented — a value that isn't known is omitted rather than
-shown as zero.
-
-- **`rate_limits` absent** — the quota fields are dropped entirely. This is
-  normal before the first API response of a session, and permanent on API-key
-  auth (the field is Claude.ai Pro/Max only). Each window is handled
-  independently, so if only `five_hour` is present you get only that.
-- **After `/compact`, or before the first API call** — `current_usage` is
-  `null`, so the token counts drop and the line shrinks to what's known.
-- **`used_percentage` null** — recomputed from `current_usage` using the same
-  input-only formula Claude Code uses, so it matches `/context`.
-- **No `effort`**: before the first turn, or on a model without effort
-  support. The model shows alone.
-- **Not a git repository, or git fails or times out**: the git field is
-  hidden.
-- **Malformed payload** — individual segments drop; the script never raises.
-  A total failure prints `usage unavailable` rather than going blank.
+- **No usage limits yet:** before the first reply of a session, and always
+  when using an API key instead of a subscription. The limit fields are
+  hidden; each window independently.
+- **No context figures:** just after `/compact` or before the first reply.
+  The raw counts are hidden; the percentage is recomputed when possible, the
+  same way `/context` does.
+- **No effort:** before the first turn, or on a model without effort levels.
+  The model shows alone.
+- **No repository, or git fails or is slow:** the git field is hidden.
+- **Malformed input:** the affected fields are hidden. If everything fails,
+  the line reads `usage unavailable` instead of going blank.
 
 ## Narrow terminals
 
-The script reads `COLUMNS` and shrinks one step at a time: the reset times,
-then `Context:`'s raw counts, then cwd down to its last folder, then the git
-symbols, then the effort. Only then do whole fields drop: git, then model,
-then cwd. Quota and context are never dropped.
+The line reads the terminal's width and shrinks one step at a time:
 
 ```
 170 cols  ~/Programming/claude-code-status | 5h 23.5% [17:42] | Week: 41.2% [Wed 15:42] | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
-151 cols  ~/Programming/claude-code-status | 5h 23.5% | Week: 41.2% | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
-131 cols  ~/Programming/claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
 120 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
-106 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main
-100 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | claude-code-status:main
  93 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5
- 67 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8%
  56 cols  5h 23.5% | Week: 41.2% | Context: 8%
 ```
 
-Icons are narrower than the text labels, so with `icons` on each step comes
-at a smaller width.
+With icons on, each step comes at a smaller width, since icons are shorter
+than the text labels.
 
 ## Development
 
-Requires Python 3.11+ for the tests (the script itself has no such floor).
-Everything uses the standard library: there is nothing to install.
+Standard library only; the tests need Python 3.11 or later.
 
 ```sh
-python3 -m unittest discover -s tests -t .   # the test suite
-./scripts/run-fixtures.sh                    # render every payload, to check by eye
-./statusline.py < fixtures/full.json         # one payload (after run-fixtures)
+python3 -m unittest discover -s tests -t .   # run the tests
+./scripts/run-fixtures.sh                    # render every sample input, to check by eye
+./statusline.py < fixtures/full.json         # render one (after run-fixtures)
 ```
 
 ```
 tests/
-  payloads.py         stdin payloads: the full one and each degradation path
-  support.py          frozen clock, canned git output, main() run in-process
-  test_formatting.py  token counts, percentages, reset times, cwd
-  test_git.py         every porcelain status code, colours, and a real repo
+  payloads.py         sample inputs: a full one and each missing-data case
+  support.py          frozen clock, canned git output, in-process runs
+  test_formatting.py  numbers, percentages, reset times, directory
+  test_git.py         every git status code, colours, and a real repository
   test_layout.py      field order, the exact shrink sequence, icons, NO_COLOR
   test_cli.py         the script as a separate process, as Claude Code runs it
 scripts/
-  make-fixtures.py    dumps the payloads to fixtures/ (generated, not tracked)
+  make-fixtures.py    writes the sample inputs to fixtures/ (not tracked)
   run-fixtures.sh     renders each of them
 ```
 
 The tests freeze the clock and stub git, so they give the same result on any
-machine and at any time of day. `test_git.py` also runs against a real
-throwaway repository, to catch changes in git's own output. CI
-(`.github/workflows/tests.yml`) runs the suite and the fixture render on
-Python 3.11 and 3.14 for every push and pull request.
+machine at any time of day; a few also run against a real throwaway
+repository to catch changes in git's output. CI runs them on Python 3.11 and
+3.14 for every push and pull request.
 
 ## Not included
 
-Per-model weekly limits (`seven_day_opus`, `seven_day_sonnet`) and extra-credit
-balance are **not** in the statusline payload. They exist only on the
-undocumented `/api/oauth/usage` endpoint, which needs an OAuth token and rate
-limits aggressively. Adding them would mean reintroducing credentials, caching,
-and backoff — deliberately out of scope here.
-
-Session cost is omitted: on a subscription it is an API-price equivalent, not
-a bill.
+- **Per-model weekly limits and extra-usage balance.** Claude Code does not
+  pass them to status lines. They exist only behind an undocumented,
+  rate-limited endpoint that needs your login token, which would break the
+  privacy guarantees above.
