@@ -35,6 +35,8 @@ CONFIG = {
     # The logged-in account's email, to tell accounts apart. Reads that one
     # field from the active config dir's .claude.json.
     "show_account": True,
+    # System RAM in use out of the total. Linux and macOS.
+    "show_memory": True,
     # Per-call token detail — off by default, one line has no room for it.
     "show_input_tokens": False,
     "show_cache_split": False,
@@ -65,6 +67,7 @@ ICONS = {
     "model": "\uf2db",  # nf-fa-microchip
     "git": "\ue0a0",  # nf-pl-branch
     "account": "\uf007",  # nf-fa-user
+    "memory": "\uefc5",  # nf-fa-memory
 }
 
 # What `icons: False` shows instead; a missing key means no label at all.
@@ -73,6 +76,7 @@ TEXT_LABELS = {
     "seven_day": "Week:",
     "context": "Context:",
     "account": "Account:",
+    "memory": "RAM:",
 }
 
 GREEN, YELLOW, RED, BLUE, MAGENTA, CYAN, DIM, RESET = (
@@ -152,6 +156,7 @@ def fmt_tokens(n) -> str:
 def fmt_pct(pct: float) -> str:
     """One decimal, but drop it when it adds nothing (23.0% -> 23%)."""
     return f"{pct:.0f}%" if abs(pct - round(pct)) < 0.05 else f"{pct:.1f}%"
+
 
 
 def fmt_reset(epoch) -> str | None:
@@ -337,21 +342,21 @@ def context_segments(data: dict) -> list[tuple[int, list[str]]]:
             if w is not None or r is not None:
                 cache = f" (cache w{fmt_tokens(w or 0)} r{fmt_tokens(r or 0)})"
                 variants = [short + cache, short]
-        segs.append((5, variants))
+        segs.append((6, variants))
 
     if CONFIG["show_output_tokens"] and usage.get("output_tokens") is not None:
-        segs.append((4, [f"out {fmt_tokens(usage['output_tokens'])}"]))
+        segs.append((5, [f"out {fmt_tokens(usage['output_tokens'])}"]))
 
     if CONFIG["show_duration"]:
         dur = fmt_duration(dig(data, "cost", "total_duration_ms"))
         if dur:
-            segs.append((6, [dur]))
+            segs.append((7, [dur]))
 
     if CONFIG["show_lines_changed"]:
         added = dig(data, "cost", "total_lines_added")
         removed = dig(data, "cost", "total_lines_removed")
         if added or removed:
-            segs.append((7, [f"+{added or 0}/-{removed or 0}"]))
+            segs.append((8, [f"+{added or 0}/-{removed or 0}"]))
 
     return segs
 
@@ -464,7 +469,66 @@ def account_email() -> str | None:
 def account_segment() -> tuple[int, list[str]] | None:
     email = account_email()
     # Highest priority number: the first whole field to drop when narrow.
-    return (8, [labelled("account", email)]) if email else None
+    return (9, [labelled("account", email)]) if email else None
+
+
+def fmt_size(n: int) -> str:
+    """Binary units, as free -h and system monitors count them:
+    8 GiB -> '8GB', 7.6 GiB -> '7.6GB', 512 MiB -> '512MB'."""
+    gib = n / 2**30
+    if gib < 1:
+        return f"{n / 2**20:.0f}MB"
+    return f"{gib:.0f}GB" if abs(gib - round(gib)) < 0.05 else f"{gib:.1f}GB"
+
+
+def parse_meminfo(text: str) -> tuple[int, int] | None:
+    """(used, total) bytes. Used is total minus available, so the page cache
+    the kernel hands back on demand does not count as used."""
+    fields = {}
+    for line in text.splitlines():
+        key, _, rest = line.partition(":")
+        if rest.split():
+            fields[key] = int(rest.split()[0]) * 1024
+    total, available = fields.get("MemTotal"), fields.get("MemAvailable")
+    if not total or available is None:
+        return None
+    return total - available, total
+
+
+def parse_vm_stat(text: str, total: int) -> tuple[int, int] | None:
+    """(used, total) bytes, as Activity Monitor's "Memory Used" counts it:
+    app memory (anonymous minus purgeable), wired and compressed."""
+    size = re.search(r"page size of (\d+) bytes", text)
+    pages = {k.strip(): int(v) for k, v in re.findall(r"^([^:\n]+):\s+(\d+)\.?$", text, re.M)}
+    keys = ("Anonymous pages", "Pages purgeable", "Pages wired down", "Pages occupied by compressor")
+    if not size or not total or any(k not in pages for k in keys):
+        return None
+    used_pages = pages[keys[0]] - pages[keys[1]] + pages[keys[2]] + pages[keys[3]]
+    return used_pages * int(size.group(1)), total
+
+
+def memory_reading() -> tuple[int, int] | None:
+    """System memory (used, total) in bytes; None off Linux and macOS."""
+    try:
+        if sys.platform.startswith("linux"):
+            return parse_meminfo(Path("/proc/meminfo").read_text())
+        if sys.platform == "darwin":
+            total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+            out = subprocess.run(["vm_stat"], capture_output=True, text=True, timeout=CONFIG["git_timeout"])
+            return parse_vm_stat(out.stdout, total) if out.returncode == 0 else None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def memory_segment() -> tuple[int, list[str]] | None:
+    reading = memory_reading()
+    if reading is None:
+        return None
+    used, total = reading
+    # Coloured by the share in use, like the usage limits.
+    shown = paint(fmt_size(used), colour_for(used / total * 100))
+    return (4, [labelled("memory", f"{shown}/{fmt_size(total)}")])
 
 
 # --------------------------------------------------------------------------
@@ -488,8 +552,8 @@ def main() -> None:
         data = {}
 
     # Priority decides what drops when even the sparsest variants overflow:
-    # highest number first, so account, then git, model and cwd; quota and
-    # context (priority 0) never drop.
+    # highest number first, so account, then memory, git, model and cwd;
+    # quota and context (priority 0) never drop.
     segments: list[tuple[int, list[str]]] = []
     if CONFIG["show_cwd"]:
         segments += filter(None, [cwd_segment(data)])
@@ -499,6 +563,8 @@ def main() -> None:
         segments += context_segments(data)
     if CONFIG["show_model"]:
         segments += filter(None, [model_segment(data)])
+    if CONFIG["show_memory"]:
+        segments += filter(None, [memory_segment()])
     if CONFIG["show_git"]:
         segments += filter(None, [git_segment(data)])
     if CONFIG["show_account"]:

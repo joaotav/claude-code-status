@@ -13,6 +13,7 @@ from tests.support import HOME, NOW, changed, environment, porcelain, run_main, 
 GIT = porcelain(changed(".M"), untracked(), ab="+2 -0")
 ACCOUNT = "me@example.com"
 A = f" • Account: {ACCOUNT}"
+MEMORY = (int(7.6 * 2**30), int(14.8 * 2**30))
 
 
 def payload(**overrides) -> dict:
@@ -23,17 +24,17 @@ def payload(**overrides) -> dict:
 
 class OrderTest(unittest.TestCase):
     def test_fields_in_order_with_text_labels(self):
-        with environment(git=GIT, account=ACCOUNT):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY):
             line = run_main(payload())
         self.assertEqual(
             line,
             "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • "
-            "Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2 • "
-            "Account: me@example.com",
+            "Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • "
+            "repo:main !1 ?1 ⇡2 • Account: me@example.com",
         )
 
     def test_account_can_be_turned_off(self):
-        with environment(git=GIT, account=ACCOUNT), mock.patch.dict(statusline.CONFIG, {"show_account": False}):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY), mock.patch.dict(statusline.CONFIG, {"show_account": False}):
             self.assertNotIn(ACCOUNT, run_main(payload()))
 
     def test_session_cost_is_not_shown(self):
@@ -49,21 +50,23 @@ class OrderTest(unittest.TestCase):
 
 class ShrinkTest(unittest.TestCase):
     """Narrowing the terminal one column at a time must shed detail in the
-    agreed order, and only then drop whole fields: account, git, model, cwd."""
+    agreed order, and only then drop whole fields: account, memory, git,
+    model, cwd."""
 
     EXPECTED = [
-        "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 1. reset times
-        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 2. context's raw counts
-        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 3. cwd down to its leaf
-        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 4. git symbols
-        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main" + A,
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main" + A,
         # 5. effort
-        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • repo:main" + A,
-        # then whole fields: account, git, model, cwd
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main" + A,
+        # then whole fields: account, memory, git, model, cwd
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main",
         "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • repo:main",
         "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5",
         "demo • 5h 23.5% • Week: 41.2% • Context: 8%",
@@ -72,7 +75,7 @@ class ShrinkTest(unittest.TestCase):
 
     def test_shrink_sequence(self):
         seen: list[str] = []
-        with environment(git=GIT, account=ACCOUNT):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY):
             for width in range(200, 19, -1):
                 line = run_main(payload(), columns=width)
                 if not seen or line != seen[-1]:
@@ -81,19 +84,19 @@ class ShrinkTest(unittest.TestCase):
 
     def test_every_line_fits_until_only_quota_and_context_remain(self):
         floor = len(self.EXPECTED[-1])
-        with environment(git=GIT, account=ACCOUNT):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY):
             for width in range(floor, 200):
                 with self.subTest(width=width):
                     self.assertLessEqual(len(run_main(payload(), columns=width)), width)
 
     def test_quota_and_context_are_never_dropped(self):
-        with environment(git=GIT, account=ACCOUNT):
+        with environment(git=GIT, account=ACCOUNT, memory=MEMORY):
             self.assertEqual(run_main(payload(), columns=20), self.EXPECTED[-1])
 
 
 class LabelsAndColourTest(unittest.TestCase):
     def test_icons_replace_text_labels(self):
-        with environment(icons=True, git=GIT, account=ACCOUNT):
+        with environment(icons=True, git=GIT, account=ACCOUNT, memory=MEMORY):
             line = run_main(payload())
         for key, icon in statusline.ICONS.items():
             with self.subTest(key):

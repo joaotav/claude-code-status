@@ -39,18 +39,23 @@ class CliTest(unittest.TestCase):
                     self.assertEqual(result.stderr, "")
                     self.assertNotIn("usage unavailable", result.stdout)
 
-    def test_empty_stdin_prints_nothing(self):
+    def test_empty_stdin_shows_at_most_system_memory(self):
+        # Memory is the one field that needs no payload; nothing else may show.
         result = run("")
-        self.assertEqual((result.returncode, result.stdout), (0, ""))
+        self.assertEqual(result.returncode, 0)
+        self.assertNotIn("•", result.stdout)
+        self.assertNotIn("%", result.stdout)
 
     def test_invalid_json_degrades_to_a_marker(self):
         result = run("{not json")
         self.assertEqual(result.returncode, 0)
         self.assertIn("usage unavailable", result.stdout)
 
-    def test_non_object_json_prints_nothing(self):
+    def test_non_object_json_shows_at_most_system_memory(self):
         result = run("[1, 2, 3]")
-        self.assertEqual((result.returncode, result.stdout), (0, ""))
+        self.assertEqual(result.returncode, 0)
+        self.assertNotIn("•", result.stdout)
+        self.assertNotIn("%", result.stdout)
 
 
 if __name__ == "__main__":

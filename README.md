@@ -2,10 +2,11 @@
 
 A status line for Claude Code that shows, in one row under the prompt, where
 you are, how much of your subscription you have used, which model you are on,
-the state of your git repository, and which account is logged in.
+how much of your system's memory is in use, the state of your git repository,
+and which account is logged in.
 
 ```
-~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 476.5k/1M 48% • Opus 5.5 (high) • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
+~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 476.5k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
 ```
 
 Shown here with text labels. By default each label is a Nerd Font icon.
@@ -19,6 +20,7 @@ Shown here with text labels. By default each label is a Nerd Font icon.
 | Weekly limit | `Week: 41.2% [Thu 14:00]` | Share of your weekly limit spent, and when it resets. |
 | Context | `Context: 476.5k/1M 48%` | How full the conversation's context window is. |
 | Model | `Opus 5.5 (high)` | The model, and its effort level once the first turn has set it. |
+| Memory | `RAM: 7.6GB/14.8GB` | System RAM in use out of the total, in binary units as `free -h` and system monitors count them. Linux and macOS. |
 | Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and what has changed. Hidden outside a repository. |
 | Account | `Account: me@example.com` | The logged-in account, for when you switch between several. |
 
@@ -46,19 +48,23 @@ A detached HEAD shows as `@a1b2c3d` in place of the branch.
   command gets colour, width fitting, and every field above from what Claude
   Code already sends it.
 - **Nothing is fetched.** Every value comes from the data Claude Code passes
-  in, one local `git status`, or the account file Claude Code already keeps.
-  There is no daemon, cache or network call to break or slow down, and a
+  in, one local `git status`, the account file Claude Code already keeps, or
+  the operating system's memory figures. There is no daemon, cache or network call to break or slow down, and a
   render takes about 40 ms.
 - **Missing means hidden, never zero.** A value Claude Code has not reported
   yet is left out rather than shown as `0%`, so the line never claims
   something it does not know.
 - **Usage always stays on screen.** On a narrow terminal the line sheds detail
   first (reset times, raw token counts, the full path, git symbols, effort),
-  then whole fields (account, git, model, then directory). The quota and
+  then whole fields (account, memory, git,
+  model, then directory). The quota and
   context are never dropped.
 - **The account comes from Claude Code's own record**, not from the config
   folder's name, so it stays right after a `/login` to another account. Each
   account folder (`CLAUDE_CONFIG_DIR`) is read separately.
+- **Memory counts what programs actually hold.** The disk cache the system
+  hands back on demand is not counted as used, matching `free -h` on Linux
+  and Activity Monitor's "Memory Used" on macOS.
 - **Reset times are clock times** (`19:45`, `Thu 14:00`), not countdowns, so
   they stay correct between refreshes.
 - **No session cost.** On a subscription it is an API-price estimate, not a
@@ -87,6 +93,8 @@ anywhere.
 - Your account's email, the one field it takes from Claude Code's account
   file (`.claude.json` in the active config folder, or in your home
   directory). Turn `show_account` off and the file is not opened at all.
+- The system's memory totals: from `/proc/meminfo` on Linux, and from
+  `vm_stat` on macOS. Nothing about individual processes is read.
 
 **What it never does**
 
@@ -144,6 +152,7 @@ Edit the `CONFIG` block at the top of `statusline.py`.
 | `show_model` | `True` | Model and effort |
 | `show_git` | `True` | Repository, branch and symbols |
 | `show_account` | `True` | Logged-in account's email |
+| `show_memory` | `True` | System RAM in use out of the total |
 | `icons` | `True` | Nerd Font icons; `False` for text labels |
 | `colour` | `True` | Colour; the `NO_COLOR` variable also turns it off |
 | `warn_at` | `60.0` | Percentage that turns yellow |
@@ -174,6 +183,7 @@ Off by default, for lack of room on one line:
 - **No repository, or git fails or is slow:** the git field is hidden.
 - **No account:** logged out, or using an API key. The account field is
   hidden.
+- **Not Linux or macOS:** the memory field is hidden.
 - **Malformed input:** the affected fields are hidden. If everything fails,
   the line reads `usage unavailable` instead of going blank.
 
@@ -182,9 +192,11 @@ Off by default, for lack of room on one line:
 The line reads the terminal's width and shrinks one step at a time:
 
 ```
-200 cols  ~/Programming/claude-code-status • 5h 23.5% [18:24] • Week: 41.2% [Wed 16:24] • Context: 15.5k/200k 8% • Opus 5.5 (high) • claude-code-status:main !5 ?1 • Account: me@example.com
-146 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • claude-code-status:main !5 ?1 • Account: me@example.com
-119 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • claude-code-status:main
+230 cols  ~/Programming/claude-code-status • 5h 23.5% [18:44] • Week: 41.2% [Wed 16:44] • Context: 15.5k/200k 8% • Opus 5.5 (high) • RAM: 7.8GB/14.8GB • claude-code-status:main !6 ?1 • Account: me@example.com
+166 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.8GB/14.8GB • claude-code-status:main !6 ?1 • Account: me@example.com
+146 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
+139 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main
+113 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • claude-code-status:main
  93 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5
  56 cols  5h 23.5% • Week: 41.2% • Context: 8%
 ```
@@ -209,6 +221,7 @@ tests/
   test_formatting.py  numbers, percentages, reset times, directory
   test_git.py         every git status code, colours, and a real repository
   test_account.py     which account file is read, and when it is hidden
+  test_memory.py      /proc and vm_stat parsing, sizes, the real system's figures
   test_layout.py      field order, the exact shrink sequence, icons, NO_COLOR
   test_cli.py         the script as a separate process, as Claude Code runs it
 scripts/
@@ -218,8 +231,8 @@ scripts/
 
 The tests freeze the clock and stub git, so they give the same result on any
 machine at any time of day; a few also run against a real throwaway
-repository to catch changes in git's output. CI runs them on Python 3.11 and
-3.14 for every push and pull request.
+repository to catch changes in git's output. CI runs them on Linux and
+macOS, with Python 3.11 and 3.14, for every push and pull request.
 
 ## Not included
 

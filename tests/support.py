@@ -70,9 +70,10 @@ def environment(
     git: str | None = None,
     repo: str | None = "repo",
     account: str | None = None,
+    memory: tuple[int, int] | None = None,
 ) -> ExitStack:
     """Patch everything a render depends on outside its payload: the clock,
-    HOME, NO_COLOR, the icons switch, git, and the logged-in account."""
+    HOME, NO_COLOR, the icons switch, git, the logged-in account and memory."""
     stack = ExitStack()
     stack.enter_context(mock.patch.object(statusline, "datetime", FrozenDateTime))
     env = {"HOME": HOME}
@@ -85,6 +86,7 @@ def environment(
     stack.enter_context(mock.patch.object(statusline, "git_status", return_value=git))
     stack.enter_context(mock.patch.object(statusline, "repo_name", return_value=repo))
     stack.enter_context(mock.patch.object(statusline, "account_email", return_value=account))
+    stack.enter_context(mock.patch.object(statusline, "memory_reading", return_value=memory))
     return stack
 
 
