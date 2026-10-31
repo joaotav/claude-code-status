@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Render every fixture through the statusline, so all degradation paths are
-# visible at once. Any non-zero exit means the script raised, which would show
-# up in Claude Code as a blank status line.
+# visible at once for a by-eye check; the assertions live in tests/. Any
+# non-zero exit means the script raised, which would show up in Claude Code as
+# a blank status line.
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
-python3 make-fixtures.py >/dev/null
+python3 scripts/make-fixtures.py >/dev/null
 
 fail=0
 for f in fixtures/*.json; do
