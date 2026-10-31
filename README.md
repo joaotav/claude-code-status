@@ -1,26 +1,38 @@
-# claude-usage-widget
+# claude-code-status
 
-A Claude Code statusline that shows subscription usage without running `/usage`.
+A Claude Code statusline: where you are, subscription usage without running
+`/usage`, the model, and the git state.
 
 ```
-5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | $0.01
+~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
 ```
 
-`5h` and `Week:` are your Pro/Max quota — percentage consumed, with the reset
-time in brackets. `Context:` is the live context window, and the last field is
-the session cost so far.
+(Shown with text labels. By default the labels are Nerd Font icons: see
+`icons` below.)
+
+- **cwd**: home shown as `~`, deep paths trimmed to `~/…/leaf`.
+- **`5h` and `Week:`**: your Pro/Max quota, percentage consumed, with the
+  reset time in brackets.
+- **`Context:`**: the live context window.
+- **Model**: with the effort level once the first turn has set it.
+- **Git**: `repo:branch` (or `@sha` when detached), then Starship's symbols,
+  each hidden at zero: `!` modified, `+` staged, `?` untracked, `✘` deleted,
+  `⇡` ahead of upstream, `⇣` behind. Merge conflicts count as `!`. Hidden
+  outside a repository.
 
 It renders in its own row at the bottom of the Claude Code window, above the
-built-in footer badges — it does not replace them.
+built-in footer badges. It does not replace them.
 
 ## How it works
 
 Claude Code passes session data to the statusline command as JSON on stdin, and
-that payload already includes `rate_limits.five_hour` and
-`rate_limits.seven_day`. So this script makes **no network calls, reads no
-credentials, and has no daemon or cache**. It is a pure stdin-to-stdout
-formatter, which is why it can run on every render (~23 ms per invocation,
-against Claude Code's 300 ms debounce).
+that payload already includes the quota, context, model, effort and directory.
+So this script makes **no network calls, reads no credentials, and has no
+daemon or cache**. Its one subprocess is a single `git status
+--porcelain=v2 --branch`, which gives branch, ahead/behind and file states in
+one call. It runs with a 0.5 s timeout and `GIT_OPTIONAL_LOCKS=0`, so it never
+takes the index lock Claude's own git commands need. A render takes ~37 ms,
+against Claude Code's 300 ms debounce.
 
 ## Install
 
@@ -32,7 +44,7 @@ Add to `~/.claude/settings.json`:
 {
   "statusLine": {
     "type": "command",
-    "command": "/path/to/claude-usage-widget/statusline.py",
+    "command": "/path/to/claude-code-status/statusline.py",
     "padding": 0,
     "refreshInterval": 60
   }
@@ -49,9 +61,11 @@ Edit the `CONFIG` block at the top of `statusline.py`:
 
 | Key | Default | Effect |
 |---|---|---|
+| `show_cwd` | `True` | `~/…/AI Productivity` |
 | `show_quota` | `True` | `5h ...` and `Week: ...` |
 | `show_context` | `True` | `Context: 476.5k/1M 48%` |
-| `show_cost` | `True` | `$0.01` |
+| `show_model` | `True` | `Opus 5.5 (high)` |
+| `show_git` | `True` | `obsidian_vault:main !2 +1 ?1 ⇡2` |
 | `show_input_tokens` | `False` | `in 8.5k` — per-call fresh input |
 | `show_cache_split` | `False` | `(cache w5k r2k)` — written / read |
 | `show_output_tokens` | `False` | `out 1.2k` |
@@ -60,8 +74,17 @@ Edit the `CONFIG` block at the top of `statusline.py`:
 | `warn_at` | `60.0` | Percent at which numbers turn yellow |
 | `crit_at` | `85.0` | Percent at which numbers turn red |
 | `colour` | `True` | ANSI colour (also disabled by `NO_COLOR`) |
+| `icons` | `True` | Nerd Font glyphs instead of text labels (see below) |
 | `separator` | `" \| "` | Between segments |
-| `cost_decimals` | `2` | Decimal places on the cost figure |
+| `git_timeout` | `0.5` | Seconds before a slow `git status` is abandoned and the git field hidden |
+
+### Icons
+
+With `icons` on, each field gets a Nerd Font glyph: folder (cwd), hourglass
+(`5h`), calendar (`Week:`), database (`Context:`), microchip (model), branch
+(git). They are Font Awesome codepoints, the set least likely to move between
+Nerd Font versions. In a terminal without a Nerd Font they draw as boxes, so
+set `icons` to `False` there to get the text labels back.
 
 The per-call token fields are off by default because one line has no room for
 them. They describe the **most recent API call**, not session totals:
@@ -83,20 +106,34 @@ shown as zero.
   `null`, so the token counts drop and the line shrinks to what's known.
 - **`used_percentage` null** — recomputed from `current_usage` using the same
   input-only formula Claude Code uses, so it matches `/context`.
+- **No `effort`**: before the first turn, or on a model without effort
+  support. The model shows alone.
+- **Not a git repository, or git fails or times out**: the git field is
+  hidden.
 - **Malformed payload** — individual segments drop; the script never raises.
   A total failure prints `usage unavailable` rather than going blank.
 
 ## Narrow terminals
 
-The script reads `COLUMNS` and shrinks in two stages: first the bracketed reset
-times drop and `Context:` sheds its raw token counts, then whole fields are
-dropped lowest-value first. The quota percentages are never dropped.
+The script reads `COLUMNS` and shrinks one step at a time: the reset times,
+then `Context:`'s raw counts, then cwd down to its last folder, then the git
+symbols, then the effort. Only then do whole fields drop: git, then model,
+then cwd. Quota and context are never dropped.
 
 ```
-75 cols   5h 23.5% [15:25] | Week: 41.2% [Fri 13:25] | Context: 15.5k/200k 8% | $0.01
-60 cols   5h 23.5% | Week: 41.2% | Context: 8% | $0.01
-32 cols   5h 23.5% | Week: 41.2%
+170 cols  ~/Programming/claude-code-status | 5h 23.5% [17:42] | Week: 41.2% [Wed 15:42] | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
+151 cols  ~/Programming/claude-code-status | 5h 23.5% | Week: 41.2% | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
+131 cols  ~/Programming/claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
+120 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
+106 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main
+100 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | claude-code-status:main
+ 93 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5
+ 67 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8%
+ 56 cols  5h 23.5% | Week: 41.2% | Context: 8%
 ```
+
+Icons are narrower than the text labels, so with `icons` on each step comes
+at a smaller width.
 
 ## Development
 
@@ -118,5 +155,5 @@ undocumented `/api/oauth/usage` endpoint, which needs an OAuth token and rate
 limits aggressively. Adding them would mean reintroducing credentials, caching,
 and backoff — deliberately out of scope here.
 
-Model, effort, thinking and PR indicators are also omitted: Claude Code already
-shows those in its own footer badges.
+Session cost is omitted: on a subscription it is an API-price equivalent, not
+a bill.
