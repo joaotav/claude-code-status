@@ -63,9 +63,16 @@ def untracked(name: str = "new") -> str:
     return f"? {name}"
 
 
-def environment(*, icons: bool = False, colour: bool = False, git: str | None = None, repo: str | None = "repo") -> ExitStack:
+def environment(
+    *,
+    icons: bool = False,
+    colour: bool = False,
+    git: str | None = None,
+    repo: str | None = "repo",
+    account: str | None = None,
+) -> ExitStack:
     """Patch everything a render depends on outside its payload: the clock,
-    HOME, NO_COLOR, the icons switch, and git."""
+    HOME, NO_COLOR, the icons switch, git, and the logged-in account."""
     stack = ExitStack()
     stack.enter_context(mock.patch.object(statusline, "datetime", FrozenDateTime))
     env = {"HOME": HOME}
@@ -77,6 +84,7 @@ def environment(*, icons: bool = False, colour: bool = False, git: str | None = 
     stack.enter_context(mock.patch.dict(statusline.CONFIG, {"icons": icons, "colour": colour}))
     stack.enter_context(mock.patch.object(statusline, "git_status", return_value=git))
     stack.enter_context(mock.patch.object(statusline, "repo_name", return_value=repo))
+    stack.enter_context(mock.patch.object(statusline, "account_email", return_value=account))
     return stack
 
 

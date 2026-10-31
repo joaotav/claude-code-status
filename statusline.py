@@ -32,6 +32,9 @@ CONFIG = {
     "show_context": True,
     "show_model": True,
     "show_git": True,
+    # The logged-in account's email, to tell accounts apart. Reads that one
+    # field from the active config dir's .claude.json.
+    "show_account": True,
     # Per-call token detail — off by default, one line has no room for it.
     "show_input_tokens": False,
     "show_cache_split": False,
@@ -61,6 +64,7 @@ ICONS = {
     "context": "\uf1c0",  # nf-fa-database
     "model": "\uf2db",  # nf-fa-microchip
     "git": "\ue0a0",  # nf-pl-branch
+    "account": "\uf007",  # nf-fa-user
 }
 
 # What `icons: False` shows instead; a missing key means no label at all.
@@ -68,6 +72,7 @@ TEXT_LABELS = {
     "five_hour": "5h",
     "seven_day": "Week:",
     "context": "Context:",
+    "account": "Account:",
 }
 
 GREEN, YELLOW, RED, BLUE, MAGENTA, CYAN, DIM, RESET = (
@@ -440,6 +445,28 @@ def git_segment(data: dict) -> tuple[int, list[str]] | None:
     return (3, at_stage(4, f"{base} {symbols}", base) if symbols else [base])
 
 
+def account_email() -> str | None:
+    """The logged-in account's email, or None (API key, logged out, no file).
+
+    Claude Code keeps it in .claude.json: inside CLAUDE_CONFIG_DIR when that
+    is set (one dir per account), else in the home directory. Only this one
+    field is read; the login token lives in another file, never opened here."""
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    path = Path(config_dir) / ".claude.json" if config_dir else Path.home() / ".claude.json"
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    email = dig(data, "oauthAccount", "emailAddress")
+    return email if isinstance(email, str) and email else None
+
+
+def account_segment() -> tuple[int, list[str]] | None:
+    email = account_email()
+    # Highest priority number: the first whole field to drop when narrow.
+    return (8, [labelled("account", email)]) if email else None
+
+
 # --------------------------------------------------------------------------
 # Entry point
 # --------------------------------------------------------------------------
@@ -461,8 +488,8 @@ def main() -> None:
         data = {}
 
     # Priority decides what drops when even the sparsest variants overflow:
-    # highest number first, so git, then model, then cwd; quota and context
-    # (priority 0) never drop.
+    # highest number first, so account, then git, model and cwd; quota and
+    # context (priority 0) never drop.
     segments: list[tuple[int, list[str]]] = []
     if CONFIG["show_cwd"]:
         segments += filter(None, [cwd_segment(data)])
@@ -474,6 +501,8 @@ def main() -> None:
         segments += filter(None, [model_segment(data)])
     if CONFIG["show_git"]:
         segments += filter(None, [git_segment(data)])
+    if CONFIG["show_account"]:
+        segments += filter(None, [account_segment()])
 
     if not segments:
         return  # nothing known yet — print nothing rather than an empty shell

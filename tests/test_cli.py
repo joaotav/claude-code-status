@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
 
@@ -16,14 +17,16 @@ SCRIPT = ROOT / "statusline.py"
 
 
 def run(stdin: str, columns: int = 120) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(SCRIPT)],
-        input=stdin,
-        capture_output=True,
-        text=True,
-        env={**os.environ, "COLUMNS": str(columns)},
-        timeout=10,
-    )
+    # An empty config dir, so the developer's own login never shows up here.
+    with tempfile.TemporaryDirectory() as config_dir:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT)],
+            input=stdin,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "COLUMNS": str(columns), "CLAUDE_CONFIG_DIR": config_dir},
+            timeout=10,
+        )
 
 
 class CliTest(unittest.TestCase):

@@ -2,10 +2,10 @@
 
 A status line for Claude Code that shows, in one row under the prompt, where
 you are, how much of your subscription you have used, which model you are on,
-and the state of your git repository.
+the state of your git repository, and which account is logged in.
 
 ```
-~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
+~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2 | Account: me@example.com
 ```
 
 Shown here with text labels. By default each label is a Nerd Font icon.
@@ -20,6 +20,7 @@ Shown here with text labels. By default each label is a Nerd Font icon.
 | Context | `Context: 476.5k/1M 48%` | How full the conversation's context window is. |
 | Model | `Opus 5.5 (high)` | The model, and its effort level once the first turn has set it. |
 | Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and what has changed. Hidden outside a repository. |
+| Account | `Account: me@example.com` | The logged-in account, for when you switch between several. |
 
 Percentages turn **yellow from 60%** and **red from 85%**.
 
@@ -45,15 +46,19 @@ A detached HEAD shows as `@a1b2c3d` in place of the branch.
   command gets colour, width fitting, and every field above from what Claude
   Code already sends it.
 - **Nothing is fetched.** Every value comes from the data Claude Code passes
-  in, or from one local `git status`. There is no daemon, cache or network
-  call to break or slow down, and a render takes about 40 ms.
+  in, one local `git status`, or the account file Claude Code already keeps.
+  There is no daemon, cache or network call to break or slow down, and a
+  render takes about 40 ms.
 - **Missing means hidden, never zero.** A value Claude Code has not reported
   yet is left out rather than shown as `0%`, so the line never claims
   something it does not know.
 - **Usage always stays on screen.** On a narrow terminal the line sheds detail
   first (reset times, raw token counts, the full path, git symbols, effort),
-  then whole fields (git, then model, then directory). The quota and context
-  are never dropped.
+  then whole fields (account, git, model, then directory). The quota and
+  context are never dropped.
+- **The account comes from Claude Code's own record**, not from the config
+  folder's name, so it stays right after a `/login` to another account. Each
+  account folder (`CLAUDE_CONFIG_DIR`) is read separately.
 - **Reset times are clock times** (`19:45`, `Thu 14:00`), not countdowns, so
   they stay correct between refreshes.
 - **No session cost.** On a subscription it is an API-price estimate, not a
@@ -79,11 +84,15 @@ anywhere.
   transcript.
 - Your repository's state, through one `git status` in the session's
   directory, plus a check for the `.git` folder to name the repository.
+- Your account's email, the one field it takes from Claude Code's account
+  file (`.claude.json` in the active config folder, or in your home
+  directory). Turn `show_account` off and the file is not opened at all.
 
 **What it never does**
 
 - Make network requests.
-- Read credentials, tokens or Claude's configuration files.
+- Read credentials or tokens. The login token lives in a separate file
+  (`.credentials.json`) that the script never opens.
 - Write files, logs or any state; each run starts from nothing.
 - Change your repository. `git status` runs read-only, without taking the
   index lock that Claude's own git commands need, and gives up after 0.5 s.
@@ -91,9 +100,9 @@ anywhere.
 It depends only on Python's standard library, so there are no third-party
 packages to trust.
 
-**On screen:** the directory and repository names are visible to anyone who
-sees your terminal. When screen sharing, you can hide them with `show_cwd`
-and `show_git`.
+**On screen:** the directory, repository and account email are visible to
+anyone who sees your terminal. When screen sharing, you can hide them with
+`show_cwd`, `show_git` and `show_account`.
 
 ## Install
 
@@ -134,6 +143,7 @@ Edit the `CONFIG` block at the top of `statusline.py`.
 | `show_context` | `True` | Context window |
 | `show_model` | `True` | Model and effort |
 | `show_git` | `True` | Repository, branch and symbols |
+| `show_account` | `True` | Logged-in account's email |
 | `icons` | `True` | Nerd Font icons; `False` for text labels |
 | `colour` | `True` | Colour; the `NO_COLOR` variable also turns it off |
 | `warn_at` | `60.0` | Percentage that turns yellow |
@@ -162,6 +172,8 @@ Off by default, for lack of room on one line:
 - **No effort:** before the first turn, or on a model without effort levels.
   The model shows alone.
 - **No repository, or git fails or is slow:** the git field is hidden.
+- **No account:** logged out, or using an API key. The account field is
+  hidden.
 - **Malformed input:** the affected fields are hidden. If everything fails,
   the line reads `usage unavailable` instead of going blank.
 
@@ -170,8 +182,9 @@ Off by default, for lack of room on one line:
 The line reads the terminal's width and shrinks one step at a time:
 
 ```
-170 cols  ~/Programming/claude-code-status | 5h 23.5% [17:42] | Week: 41.2% [Wed 15:42] | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
-120 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !1 ?4
+200 cols  ~/Programming/claude-code-status | 5h 23.5% [18:24] | Week: 41.2% [Wed 16:24] | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !5 ?1 | Account: me@example.com
+146 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !5 ?1 | Account: me@example.com
+119 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | claude-code-status:main
  93 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5
  56 cols  5h 23.5% | Week: 41.2% | Context: 8%
 ```
@@ -195,6 +208,7 @@ tests/
   support.py          frozen clock, canned git output, in-process runs
   test_formatting.py  numbers, percentages, reset times, directory
   test_git.py         every git status code, colours, and a real repository
+  test_account.py     which account file is read, and when it is hidden
   test_layout.py      field order, the exact shrink sequence, icons, NO_COLOR
   test_cli.py         the script as a separate process, as Claude Code runs it
 scripts/
