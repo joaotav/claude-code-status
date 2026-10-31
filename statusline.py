@@ -49,8 +49,8 @@ CONFIG = {
     # Nerd Font glyphs instead of text labels. Turn off in a terminal whose
     # font lacks them, or they draw as boxes.
     "icons": True,
-    # Layout
-    "separator": " | ",
+    # Layout. The separator is drawn dim, so the values stand out.
+    "separator": " • ",
     "fallback_width": 80,
     # A stuck git (huge repo, locked index) must not blank the line.
     "git_timeout": 0.5,
@@ -198,7 +198,7 @@ def fit(segments: list[tuple[int, list[str]]], width: int) -> str:
     segments, highest priority number first. Priority 0 is never dropped, so a
     row that still overflows is emitted as-is rather than mangled.
     """
-    sep = CONFIG["separator"]
+    sep = paint(CONFIG["separator"], DIM)
 
     def render(segs, level):
         return sep.join(v[min(level, len(v) - 1)] for _, v in segs)

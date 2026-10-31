@@ -12,7 +12,7 @@ from tests.support import HOME, NOW, changed, environment, porcelain, run_main, 
 
 GIT = porcelain(changed(".M"), untracked(), ab="+2 -0")
 ACCOUNT = "me@example.com"
-A = f" | Account: {ACCOUNT}"
+A = f" • Account: {ACCOUNT}"
 
 
 def payload(**overrides) -> dict:
@@ -27,8 +27,8 @@ class OrderTest(unittest.TestCase):
             line = run_main(payload())
         self.assertEqual(
             line,
-            "~/…/demo | 5h 23.5% [14:00] | Week: 41.2% [Sun 12:00] | "
-            "Context: 15.5k/200k 8% | Opus 5.5 (high) | repo:main !1 ?1 ⇡2 | "
+            "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • "
+            "Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2 • "
             "Account: me@example.com",
         )
 
@@ -44,7 +44,7 @@ class OrderTest(unittest.TestCase):
         data = payload()
         del data["effort"]
         with environment(git=None):
-            self.assertTrue(run_main(data).endswith("| Opus 5.5"))
+            self.assertTrue(run_main(data).endswith("• Opus 5.5"))
 
 
 class ShrinkTest(unittest.TestCase):
@@ -52,22 +52,22 @@ class ShrinkTest(unittest.TestCase):
     agreed order, and only then drop whole fields: account, git, model, cwd."""
 
     EXPECTED = [
-        "~/…/demo | 5h 23.5% [14:00] | Week: 41.2% [Sun 12:00] | Context: 15.5k/200k 8% | Opus 5.5 (high) | repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% [14:00] • Week: 41.2% [Sun 12:00] • Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
         # 1. reset times
-        "~/…/demo | 5h 23.5% | Week: 41.2% | Context: 15.5k/200k 8% | Opus 5.5 (high) | repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 15.5k/200k 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
         # 2. context's raw counts
-        "~/…/demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
         # 3. cwd down to its leaf
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | repo:main !1 ?1 ⇡2" + A,
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main !1 ?1 ⇡2" + A,
         # 4. git symbols
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | repo:main" + A,
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • repo:main" + A,
         # 5. effort
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | repo:main" + A,
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • repo:main" + A,
         # then whole fields: account, git, model, cwd
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | repo:main",
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5",
-        "demo | 5h 23.5% | Week: 41.2% | Context: 8%",
-        "5h 23.5% | Week: 41.2% | Context: 8%",
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • repo:main",
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5",
+        "demo • 5h 23.5% • Week: 41.2% • Context: 8%",
+        "5h 23.5% • Week: 41.2% • Context: 8%",
     ]
 
     def test_shrink_sequence(self):
@@ -105,6 +105,13 @@ class LabelsAndColourTest(unittest.TestCase):
     def test_colour_on_emits_ansi(self):
         with environment(colour=True, git=GIT):
             self.assertIn("\033[", run_main(payload()))
+
+    def test_separators_are_dim(self):
+        with environment(colour=True, git=GIT):
+            line = run_main(payload())
+        dim_sep = f"{statusline.DIM} • {statusline.RESET}"
+        self.assertEqual(line.count(dim_sep), line.count("•"))
+        self.assertGreater(line.count(dim_sep), 0)
 
     def test_no_color_strips_every_escape(self):
         with environment(colour=False, git=GIT):

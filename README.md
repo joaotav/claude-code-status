@@ -5,7 +5,7 @@ you are, how much of your subscription you have used, which model you are on,
 the state of your git repository, and which account is logged in.
 
 ```
-~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] | Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2 | Account: me@example.com
+~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 476.5k/1M 48% • Opus 5.5 (high) • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
 ```
 
 Shown here with text labels. By default each label is a Nerd Font icon.
@@ -148,7 +148,7 @@ Edit the `CONFIG` block at the top of `statusline.py`.
 | `colour` | `True` | Colour; the `NO_COLOR` variable also turns it off |
 | `warn_at` | `60.0` | Percentage that turns yellow |
 | `crit_at` | `85.0` | Percentage that turns red |
-| `separator` | `" \| "` | Text between fields |
+| `separator` | `" • "` | Text between fields, drawn dim |
 | `git_timeout` | `0.5` | Seconds before a slow `git status` is abandoned |
 
 Off by default, for lack of room on one line:
@@ -182,11 +182,11 @@ Off by default, for lack of room on one line:
 The line reads the terminal's width and shrinks one step at a time:
 
 ```
-200 cols  ~/Programming/claude-code-status | 5h 23.5% [18:24] | Week: 41.2% [Wed 16:24] | Context: 15.5k/200k 8% | Opus 5.5 (high) | claude-code-status:main !5 ?1 | Account: me@example.com
-146 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 (high) | claude-code-status:main !5 ?1 | Account: me@example.com
-119 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5 | claude-code-status:main
- 93 cols  claude-code-status | 5h 23.5% | Week: 41.2% | Context: 8% | Opus 5.5
- 56 cols  5h 23.5% | Week: 41.2% | Context: 8%
+200 cols  ~/Programming/claude-code-status • 5h 23.5% [18:24] • Week: 41.2% [Wed 16:24] • Context: 15.5k/200k 8% • Opus 5.5 (high) • claude-code-status:main !5 ?1 • Account: me@example.com
+146 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high) • claude-code-status:main !5 ?1 • Account: me@example.com
+119 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • claude-code-status:main
+ 93 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5
+ 56 cols  5h 23.5% • Week: 41.2% • Context: 8%
 ```
 
 With icons on, each step comes at a smaller width, since icons are shorter
