@@ -415,7 +415,9 @@ def git_status(path: str) -> str | None:
     """`git status` porcelain v2 output, or None outside a repo or on any failure."""
     try:
         out = subprocess.run(
-            ["git", "-C", path, "status", "--porcelain=v2", "--branch"],
+            # A repo's own .git/config could name a command to run as its
+            # fsmonitor; never run it.
+            ["git", "-C", path, "-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch"],
             capture_output=True,
             text=True,
             timeout=CONFIG["git_timeout"],

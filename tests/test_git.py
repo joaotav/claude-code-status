@@ -122,6 +122,13 @@ class RealRepoTest(unittest.TestCase):
     def test_missing_directory_hides_the_segment(self):
         self.assertIsNone(statusline.git_status(str(self.dir / "nope")))
 
+    def test_repo_config_cannot_run_an_fsmonitor_command(self):
+        # A repo that arrived as an archive can carry its own .git/config.
+        marker = self.dir / "ran"
+        subprocess.run(["git", "-C", str(self.repo), "config", "core.fsmonitor", f"touch '{marker}'; false"], check=True)
+        statusline.git_status(str(self.repo))
+        self.assertFalse(marker.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
