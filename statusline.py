@@ -65,7 +65,7 @@ CONFIG = {
 # Font Awesome codepoints: the most stable across Nerd Font versions.
 ICONS = {
     "cwd": "\uf07c",  # nf-fa-folder_open
-    "five_hour": "\uf1da",  # nf-fa-history
+    "five_hour": "\uf017",  # nf-fa-clock_o
     "seven_day": "\uf073",  # nf-fa-calendar
     "context": "\uf1c0",  # nf-fa-database
     "model": "\uf2db",  # nf-fa-microchip
