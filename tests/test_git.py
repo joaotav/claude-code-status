@@ -60,6 +60,9 @@ class GitSegmentTest(unittest.TestCase):
         status = porcelain(head="(detached)", oid="abc1234def5678")
         self.assertEqual(self.render(status), "repo:@abc1234")
 
+    def test_control_characters_in_repo_name_are_not_printed(self):
+        self.assertEqual(self.render(porcelain(), repo="re\033]0;x\007po"), "re]0;xpo:main")
+
     def test_unknown_repo_name_shows_branch_alone(self):
         with environment(git=porcelain(), repo=None):
             self.assertEqual(statusline.git_segment(DATA)[1], ["main"])

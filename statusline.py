@@ -92,6 +92,9 @@ GREEN, YELLOW, RED, BLUE, MAGENTA, CYAN, DIM, RESET = (
 )
 
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+# C0 and C1 control characters: a folder name carrying one could send the
+# terminal an escape sequence.
+CONTROL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
 # --------------------------------------------------------------------------
@@ -209,6 +212,10 @@ def fmt_duration(ms) -> str | None:
     return f"{s}s"
 
 
+def printable(text: str) -> str:
+    return CONTROL_RE.sub("", text)
+
+
 def visible_len(text: str) -> int:
     return len(ANSI_RE.sub("", text))
 
@@ -283,6 +290,7 @@ def cwd_segment(data: dict) -> tuple[int, list[str]] | None:
     path = session_dir(data)
     if path is None:
         return None
+    path = printable(path)
     home = os.path.expanduser("~")
     if path == home or path.startswith(home + "/"):
         anchor, rest = "~", path[len(home) :].strip("/")
@@ -475,7 +483,7 @@ def git_segment(data: dict) -> tuple[int, list[str]] | None:
     if not head:
         return None
     repo = repo_name(path)
-    base = labelled("git", f"{repo}:{head}" if repo else head)
+    base = labelled("git", f"{printable(repo)}:{head}" if repo else head)
     # Staged green, unstaged yellow and untracked blue, as `git status` and
     # Powerlevel10k colour them; arrows apart so push and pull read distinctly.
     counts = (

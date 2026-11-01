@@ -121,6 +121,10 @@ class CwdSegmentTest(unittest.TestCase):
     def test_missing_cwd_is_no_segment(self):
         self.assertIsNone(statusline.cwd_segment({}))
 
+    def test_control_characters_are_not_printed(self):
+        # A folder name could carry a terminal escape (here, set the title).
+        self.assertEqual(self.variants(f"{HOME}/a\033]0;x\007b\x9b")[0], "~/a]0;xb")
+
 
 if __name__ == "__main__":
     unittest.main()
