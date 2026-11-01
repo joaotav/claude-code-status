@@ -8,7 +8,7 @@ memory, git state and the logged-in account, under the prompt.
 ![The same line as plain text](docs/statusline-plain.png)
 
 ```
-~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • me@example.com
+~/…/my-project • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • my-project:main !2 +1 ?1 ⇡2 • me@example.com
 ```
 
 Shown as plain text; by default each field starts with a Nerd Font icon
@@ -18,13 +18,13 @@ Shown as plain text; by default each field starts with a Nerd Font icon
 
 | Field | Example | Shows |
 |---|---|---|
-| Directory | `~/…/AI Productivity` | Where the session works |
+| Directory | `~/…/my-project` | Where the session works |
 | 5-hour limit | `5h 23.5% [19:45]` | Share used, and when it resets |
 | Weekly limit | `7d 41.2% [Thu 14:00]` | Share used, and when it resets |
 | Context | `477k/1M 48%` | How full the context window is |
 | Model | `Opus 5.5 (high)` | Model and effort level |
 | Memory | `7.6GB/14.8GB` | System RAM in use, as `free -h` counts it |
-| Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and changes |
+| Git | `my-project:main !2 +1 ?1 ⇡2` | Repository, branch and changes |
 | Account | `me@example.com` | Which account is logged in |
 
 Percentages and memory turn yellow from 60% and red from 85%.
@@ -142,8 +142,8 @@ brings everything back.
 Wrap at 88 columns:
 
 ```
-~/Programming/claude-code-status • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 16k/200k 8%
-Opus 5.5 (high) • 5.4GB/14.8GB • claude-code-status:main !1 • me@example.com
+~/code/claude-code-status • 5h 23.5% [14:00] • 7d 41.2% [Sun 12:00] • 16k/200k 8%
+Opus 5.5 (high) • 7.8GB/14.8GB • claude-code-status:main !1 • me@example.com
 ```
 
 Drop at shrinking widths:

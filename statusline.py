@@ -4,8 +4,8 @@
 Reads the statusline JSON payload on stdin and prints one row (text labels
 shown; with `icons` on they become Nerd Font glyphs):
 
-    ~/…/AI Productivity | 5h 23.5% [19:45] | 7d 41.2% [Thu 14:00] |
-    476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
+    ~/…/my-project | 5h 23.5% [19:45] | 7d 41.2% [Thu 14:00] |
+    476.5k/1M 48% | Opus 5.5 (high) | my-project:main !2 +1 ?1 ⇡2
 
 Quota data comes straight from stdin (`rate_limits`), so this makes no network
 calls and reads no credentials. The only subprocess is one `git status`.
