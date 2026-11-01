@@ -3,6 +3,10 @@
 A status line for Claude Code: directory, subscription usage, context, model,
 memory, git state and the logged-in account, under the prompt.
 
+![The status line with Nerd Font icons](docs/statusline-icons.png)
+
+![The same line as plain text](docs/statusline-plain.png)
+
 ```
 ~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • me@example.com
 ```
@@ -126,6 +130,10 @@ Also available, off by default: `show_input_tokens`, `show_cache_split`,
 | **Wrap** (default) | `2` | Fields move to a second line, in order, losing nothing until two lines are full | You want every field and can spare a row |
 | **Drop** | `1` | Stays on one line, shedding detail and then fields | Vertical space matters more |
 
+At its narrowest, only the two quotas and context remain:
+
+![The status line at its narrowest](docs/statusline-narrow.png)
+
 Once out of room, both shed in the same order: reset times, context
 percentage, full path, git symbols, effort; then the account, memory, git, model
 and directory fields. Quota and context always stay. Widening the window
@@ -151,6 +159,7 @@ Drop at shrinking widths:
 ```sh
 python3 -m unittest discover -s tests -t .   # tests (Python 3.11+)
 ./scripts/run-fixtures.sh                    # render every sample input
+python3 scripts/make-screenshots.py          # README images (Pillow, a Nerd Font)
 ```
 
 The tests freeze the clock and stub git, so they are deterministic; a few
