@@ -1,18 +1,20 @@
 # claude-code-status
 
-A status line for Claude Code: directory, subscription usage, context, model,
-memory, git state and the logged-in account, under the prompt.
+A status line for Claude Code. It sits under the prompt and shows the
+directory, subscription usage, context, model, memory, git state and the
+logged-in account.
 
-It fits the terminal's width: when the window is too narrow, fields move to
-a second line, and only then shed detail and whole fields; usage always
-stays (see [Narrow terminals](#narrow-terminals-wrap-or-drop)).
+The line fits the terminal. When the window gets too narrow, fields move to
+a second line first. Only when two lines aren't enough does it start dropping
+detail, and then whole fields. Usage and context never go. More in
+[Narrow terminals](#narrow-terminals).
 
-**With icons** (the default)
+**With icons**, the default.
 
 ![The status line with Nerd Font icons](docs/statusline-icons.png)
 
-**Minimal**: plain text, with `STATUSLINE_ICONS=0`
-(see [Icons or minimal](#icons-or-minimal))
+**Minimal**, plain text. Set `STATUSLINE_ICONS=0` to get it, as
+[Icons or minimal](#icons-or-minimal) explains.
 
 ![The same line as plain text](docs/statusline-plain.png)
 
@@ -29,57 +31,68 @@ stays (see [Narrow terminals](#narrow-terminals-wrap-or-drop)).
 | Git | `my-project:main !2 +1 ?1 ⇡2` | Repository, branch and changes |
 | Account | `me@example.com` | Which account is logged in |
 
-Percentages and memory turn yellow from 60% and red from 85%.
+Percentages and memory turn yellow at 60% and red at 85%.
 
-Git symbols, as in Starship and Powerlevel10k, each hidden at zero:
-`!` modified (yellow), `+` staged (green), `?` untracked (blue),
-`✘` deleted (red), `⇡` to push (cyan), `⇣` to pull (magenta). A detached
-HEAD shows as `@a1b2c3d`.
+The git symbols follow Starship and Powerlevel10k, and each one hides when
+its count is zero.
+
+| Symbol | Means | Colour |
+|---|---|---|
+| `!` | Modified | Yellow |
+| `+` | Staged | Green |
+| `?` | Untracked | Blue |
+| `✘` | Deleted | Red |
+| `⇡` | To push | Cyan |
+| `⇣` | To pull | Magenta |
+
+A detached HEAD shows as `@a1b2c3d`.
 
 ## Icons or minimal
 
-By default each field starts with a Nerd Font icon. With `icons` set to
-`False` the line is plain text, as shown above, and most fields carry no
-label: a token count, a GB figure, a branch and an email read as
-themselves. Only the two quotas keep a short label, `5h` and `7d`, since
-two bare percentages would look alike.
+Each field starts with a Nerd Font icon by default. Turn `icons` off and the
+line becomes plain text with almost no labels. A token count, a GB figure, a
+branch and an email are easy to tell apart without one. The two quotas are
+the exception. Two bare percentages side by side would look the same, so
+they keep the short labels `5h` and `7d`.
 
 ## Design choices
 
-- **Nothing is fetched.** Values come from what Claude Code passes in, one
-  local `git status`, Claude Code's account file and the OS memory figures.
-  No daemon, cache or network; a render takes about 40 ms.
-- **Missing means hidden, never zero.** An unknown value is left out, not
+- **Nothing is fetched.** Everything comes from the JSON Claude Code passes
+  in, one local `git status`, Claude Code's account file and the OS memory
+  figures. There's no daemon, cache or network call, and a render takes
+  about 40 ms.
+- **Missing means hidden.** An unknown value is left out instead of being
   shown as `0%`.
-- **Usage stays on screen.** On a narrow terminal, quota and context are
-  never dropped (see [Narrow terminals](#narrow-terminals-wrap-or-drop)).
-- **Reset times are clock times**, not countdowns, so they stay correct
-  between refreshes.
-- **No session cost.** On a subscription it is an estimate, not a bill.
+- **Usage stays on screen.** Quota and context are never dropped on a narrow
+  terminal.
+- **Reset times are clock times.** A countdown goes stale between refreshes,
+  and `19:45` doesn't.
+- **No session cost.** On a subscription it would be an estimate, not a
+  bill, so it's left out.
 
 ## Privacy
 
-The script keeps nothing and sends nothing anywhere. It reads:
+The script stores nothing and sends nothing. It reads four things:
 
-- the JSON Claude Code passes it, using the directory, model, effort,
-  limits and context size (never the transcript);
-- one read-only `git status`, which never takes the index lock and gives up
-  after 0.5 s;
-- `.claude.json`, using only the account email from it (the login token is
-  in another file it never opens);
-- the system's memory totals, from `/proc/meminfo` or `vm_stat`.
+- The JSON Claude Code passes it. It uses the directory, model, effort,
+  limits and context size, and never the transcript.
+- One read-only `git status`. It never takes the index lock and gives up
+  after 0.5 s.
+- `.claude.json`, and only the account email in it. The login token is kept
+  in a different file, which is never opened.
+- The system memory totals, from `/proc/meminfo` or `vm_stat`.
 
-Standard library only: no third-party packages. The directory, repository
-and email are visible on screen; `show_cwd`, `show_git` and `show_account`
-hide them when screen sharing.
+It uses only Python's standard library. The directory, repository and email
+do show on screen, so turn off `show_cwd`, `show_git` and `show_account`
+before sharing your screen.
 
 ## Install
 
-Runs on **Linux and macOS**, both tested in CI. Windows is not supported.
+It runs on Linux and macOS, both tested in CI. Windows isn't supported.
 
-Requires Claude Code v2.1.153+ and Python 3.8+. `git` is needed only for the
-git field. The icons need a [Nerd Font](https://www.nerdfonts.com); without
-one, set `icons` to `False` for plain text.
+You need Claude Code v2.1.153 or later and Python 3.8 or later. `git` is
+only needed for the git field. The icons need a [Nerd Font](https://www.nerdfonts.com),
+and without one you'll want the minimal line.
 
 ```sh
 git clone https://github.com/joaotav/claude-code-status.git ~/claude-code-status
@@ -87,8 +100,8 @@ cd ~/claude-code-status
 python3 scripts/make-fixtures.py > /dev/null && ./statusline.py < fixtures/full.json
 ```
 
-The last line renders a sample, to check it runs. Then add this to
-`~/.claude/settings.json`, with the full path:
+The last line renders a sample so you can check it works. Then add this to
+`~/.claude/settings.json`, with the full path to the script:
 
 ```json
 {
@@ -101,12 +114,12 @@ The last line renders a sample, to check it runs. Then add this to
 }
 ```
 
-For the plain-text line without editing the script, start the command
-with `STATUSLINE_ICONS=0 `.
+For the minimal line, put `STATUSLINE_ICONS=0 ` in front of the command.
+That leaves the script untouched, so `git pull` keeps working.
 
-`refreshInterval` keeps the numbers current while idle. With several
-accounts (`CLAUDE_CONFIG_DIR`), each config folder has its own
-`settings.json`: add the block to each. To update: `git pull`.
+`refreshInterval` keeps the numbers current while you're idle. If you use
+several accounts through `CLAUDE_CONFIG_DIR`, each config folder has its own
+`settings.json`, and each one needs the block. To update, run `git pull`.
 
 ## Configuration
 
@@ -115,31 +128,35 @@ Edit `CONFIG` at the top of `statusline.py`.
 | Key | Default | Effect |
 |---|---|---|
 | `show_cwd`, `show_quota`, `show_context`, `show_model`, `show_memory`, `show_git`, `show_account` | `True` | Each field |
-| `icons` | `True` | Nerd Font icons; `False` for plain text, as does `STATUSLINE_ICONS=0` |
-| `colour` | `True` | Colour; `NO_COLOR` also turns it off |
+| `icons` | `True` | Nerd Font icons. `False` gives the minimal line, and so does `STATUSLINE_ICONS=0` |
+| `colour` | `True` | Colour. Setting `NO_COLOR` also turns it off |
 | `warn_at`, `crit_at` | `60`, `85` | Percentages that turn yellow and red |
-| `separator` | `" • "` | Between fields, drawn dim |
-| `max_lines` | `2` | `2` wraps, `1` drops (see below) |
+| `separator` | `" • "` | Goes between fields, drawn dim |
+| `max_lines` | `2` | `2` wraps, `1` drops. See [Narrow terminals](#narrow-terminals) |
 | `git_timeout` | `0.5` | Seconds before a slow `git status` is abandoned |
 
-Also available, off by default: `show_input_tokens`, `show_cache_split`,
-`show_output_tokens`, `show_duration`, `show_lines_changed`.
+`show_input_tokens`, `show_cache_split`, `show_output_tokens`,
+`show_duration` and `show_lines_changed` also exist, and are off by default.
 
-## Narrow terminals: wrap or drop
+## Narrow terminals
+
+There are two ways to handle a narrow window, and one is chosen with
+`max_lines`.
 
 | Mode | `max_lines` | On a narrow terminal | Choose it when |
 |---|---|---|---|
-| **Wrap** (default) | `2` | Fields move to a second line, in order, losing nothing until two lines are full | You want every field and can spare a row |
-| **Drop** | `1` | Stays on one line, shedding detail and then fields | Vertical space matters more |
+| Wrap, the default | `2` | Fields move to a second line, in order. Nothing is lost until both lines are full | You want every field and can spare a row |
+| Drop | `1` | Stays on one line and sheds detail, then fields | Vertical space matters more |
 
-At its narrowest, only the two quotas and context remain:
+Once there's no room left, both modes shed in the same order. The reset
+times go first, then the context percentage, the full path, the git symbols
+and the effort level. After that whole fields go, starting with the account,
+then memory, git, model and directory. Quota and context always stay, and
+widening the window brings everything back.
+
+At its narrowest the line is just the two quotas and context.
 
 ![The status line at its narrowest](docs/statusline-narrow.png)
-
-Once out of room, both shed in the same order: reset times, context
-percentage, full path, git symbols, effort; then the account, memory, git, model
-and directory fields. Quota and context always stay. Widening the window
-brings everything back.
 
 Wrap at 88 columns:
 
@@ -159,34 +176,35 @@ Drop at shrinking widths:
 ## Development
 
 ```sh
-python3 -m unittest discover -s tests -t .   # tests (Python 3.11+)
+python3 -m unittest discover -s tests -t .   # tests, Python 3.11+
 ./scripts/run-fixtures.sh                    # render every sample input
-python3 scripts/make-screenshots.py          # README images (Pillow, a Nerd Font)
+python3 scripts/make-screenshots.py          # README images, needs Pillow and a Nerd Font
 ```
 
-The tests freeze the clock and stub git, so they are deterministic; a few
-use a real repository and the real memory figures. CI runs them on Linux and
-macOS with Python 3.11 and 3.14.
+The tests freeze the clock and stub git, so every run gives the same result.
+A few use a real repository and the machine's real memory figures. CI runs
+them on Linux and macOS with Python 3.11 and 3.14.
 
 ## Not included
 
-Per-model weekly limits and extra-usage balance: Claude Code does not pass
-them to status lines, and fetching them needs the login token.
+Per-model weekly limits and the extra-usage balance. Claude Code doesn't
+pass them to status lines, and fetching them would mean reading the login
+token, which this script won't do.
 
 ## Acknowledgements
 
-Ideas, not code, came from:
+Ideas, not code, were taken from these projects.
 
 - [One Dark Triptych](https://statuslin.es/c/one-dark-triptych-071e85e2) by
-  adrijshikhar: a status line spread over more than one line, dim
-  separators, and memory read natively on Linux and macOS.
+  adrijshikhar, for spreading a status line over more than one line, dim
+  separators, and reading memory natively on Linux and macOS.
 - [Starship](https://starship.rs) and
-  [Powerlevel10k](https://github.com/romkatv/powerlevel10k): the git status
-  symbols and colours.
+  [Powerlevel10k](https://github.com/romkatv/powerlevel10k), for the git
+  status symbols and colours.
 - [Token Weather Usage](https://github.com/augiefra/claude-mods/tree/main/plugins/token-weather-usage)
-  by augiefra: reviewed while choosing which fields are worth a place on
-  the line.
+  by augiefra, which was reviewed while deciding which fields deserve a
+  place on the line.
 
 ## License
 
-MIT; see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
