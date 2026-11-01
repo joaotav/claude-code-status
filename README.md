@@ -7,7 +7,8 @@ memory, git state and the logged-in account, under the prompt.
 ~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • me@example.com
 ```
 
-Shown without icons; by default each field starts with a Nerd Font icon.
+Shown as plain text; by default each field starts with a Nerd Font icon
+(see [Icons or plain text](#icons-or-plain-text)).
 
 ## Fields
 
@@ -28,6 +29,14 @@ Git symbols, as in Starship and Powerlevel10k, each hidden at zero:
 `!` modified (yellow), `+` staged (green), `?` untracked (blue),
 `✘` deleted (red), `⇡` to push (cyan), `⇣` to pull (magenta). A detached
 HEAD shows as `@a1b2c3d`.
+
+## Icons or plain text
+
+By default each field starts with a Nerd Font icon. With `icons` set to
+`False` the line is plain text, as shown above, and most fields carry no
+label: a token count, a GB figure, a branch and an email read as
+themselves. Only the two quotas keep a short label, `5h` and `7d`, since
+two bare percentages would look alike.
 
 ## Design choices
 
@@ -64,7 +73,7 @@ Runs on **Linux and macOS**, both tested in CI. Windows is not supported.
 
 Requires Claude Code v2.1.153+ and Python 3.8+. `git` is needed only for the
 git field. The icons need a [Nerd Font](https://www.nerdfonts.com); without
-one, set `icons` to `False` for text labels.
+one, set `icons` to `False` for plain text.
 
 ```sh
 git clone https://github.com/joaotav/claude-code-status.git ~/claude-code-status
@@ -97,7 +106,7 @@ Edit `CONFIG` at the top of `statusline.py`.
 | Key | Default | Effect |
 |---|---|---|
 | `show_cwd`, `show_quota`, `show_context`, `show_model`, `show_memory`, `show_git`, `show_account` | `True` | Each field |
-| `icons` | `True` | Nerd Font icons; `False` for text labels |
+| `icons` | `True` | Nerd Font icons; `False` for plain text |
 | `colour` | `True` | Colour; `NO_COLOR` also turns it off |
 | `warn_at`, `crit_at` | `60`, `85` | Percentages that turn yellow and red |
 | `separator` | `" • "` | Between fields, drawn dim |
@@ -122,7 +131,7 @@ brings everything back.
 Wrap at 88 columns:
 
 ```
-~/Programming/claude-code-status • 5h 23.5% [13:19] • 7d 41.2% [Thu 11:19] • 16k/200k 8%
+~/Programming/claude-code-status • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 16k/200k 8%
 Opus 5.5 (high) • 5.4GB/14.8GB • claude-code-status:main !1 • me@example.com
 ```
 
