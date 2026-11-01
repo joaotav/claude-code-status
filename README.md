@@ -4,10 +4,10 @@ A status line for Claude Code: directory, subscription usage, context, model,
 memory, git state and the logged-in account, under the prompt.
 
 ```
-~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • Context: 477k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
+~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • me@example.com
 ```
 
-Shown with text labels; by default each label is a Nerd Font icon.
+Shown without icons; by default each field starts with a Nerd Font icon.
 
 ## Fields
 
@@ -16,11 +16,11 @@ Shown with text labels; by default each label is a Nerd Font icon.
 | Directory | `~/…/AI Productivity` | Where the session works |
 | 5-hour limit | `5h 23.5% [19:45]` | Share used, and when it resets |
 | Weekly limit | `7d 41.2% [Thu 14:00]` | Share used, and when it resets |
-| Context | `Context: 477k/1M 48%` | How full the context window is |
+| Context | `477k/1M 48%` | How full the context window is |
 | Model | `Opus 5.5 (high)` | Model and effort level |
-| Memory | `RAM: 7.6GB/14.8GB` | System RAM in use, as `free -h` counts it |
+| Memory | `7.6GB/14.8GB` | System RAM in use, as `free -h` counts it |
 | Git | `obsidian_vault:main !2 +1 ?1 ⇡2` | Repository, branch and changes |
-| Account | `Account: me@example.com` | Which account is logged in |
+| Account | `me@example.com` | Which account is logged in |
 
 Percentages and memory turn yellow from 60% and red from 85%.
 
@@ -122,16 +122,16 @@ brings everything back.
 Wrap at 88 columns:
 
 ```
-claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high)
-RAM: 7.8GB/14.8GB • claude-code-status:main !1 • Account: me@example.com
+~/Programming/claude-code-status • 5h 23.5% [13:19] • 7d 41.2% [Thu 11:19] • 16k/200k 8%
+Opus 5.5 (high) • 5.4GB/14.8GB • claude-code-status:main !1 • me@example.com
 ```
 
 Drop at shrinking widths:
 
 ```
-149 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
- 96 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5
- 59 cols  5h 23.5% • 7d 41.2% • Context: 16k/200k
+126 cols  claude-code-status • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 • 7.8GB/14.8GB • claude-code-status:main • me@example.com
+ 87 cols  claude-code-status • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5
+ 50 cols  5h 23.5% • 7d 41.2% • 16k/200k
 ```
 
 ## Development

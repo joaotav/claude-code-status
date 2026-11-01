@@ -73,7 +73,7 @@ class SegmentTest(unittest.TestCase):
         return seg[1] if seg else None
 
     def test_used_over_total(self):
-        self.assertEqual(self.render((int(7.6 * GIB), int(14.8 * GIB))), ["RAM: 7.6GB/14.8GB"])
+        self.assertEqual(self.render((int(7.6 * GIB), int(14.8 * GIB))), ["7.6GB/14.8GB"])
 
     def test_no_reading_hides_the_field(self):
         self.assertIsNone(self.render(None))

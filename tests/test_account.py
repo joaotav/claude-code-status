@@ -63,9 +63,9 @@ class AccountSegmentTest(unittest.TestCase):
     def setUp(self):
         self.enterContext(mock.patch.dict(statusline.CONFIG, {"icons": False}))
 
-    def test_full_email_with_label(self):
+    def test_full_email(self):
         with mock.patch.object(statusline, "account_email", return_value="me@example.com"):
-            self.assertEqual(statusline.account_segment()[1], ["Account: me@example.com"])
+            self.assertEqual(statusline.account_segment()[1], ["me@example.com"])
 
     def test_no_account_is_no_segment(self):
         with mock.patch.object(statusline, "account_email", return_value=None):

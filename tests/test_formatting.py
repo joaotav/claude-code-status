@@ -56,8 +56,8 @@ class ContextFieldTest(unittest.TestCase):
         data = {"context_window": {"context_window_size": 200000, "total_input_tokens": 15500, "used_percentage": 7.8}}
         with environment():
             variants = statusline.context_segments(data)[0][1]
-        self.assertEqual(variants[0], "Context: 16k/200k 8%")
-        self.assertEqual(variants[-1], "Context: 16k/200k")
+        self.assertEqual(variants[0], "16k/200k 8%")
+        self.assertEqual(variants[-1], "16k/200k")
 
 
 class FmtPctTest(unittest.TestCase):

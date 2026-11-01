@@ -3,6 +3,7 @@ and colour switches."""
 
 from __future__ import annotations
 
+import re
 import unittest
 from unittest import mock
 
@@ -12,7 +13,7 @@ from tests.support import HOME, NOW, changed, environment, porcelain, run_main, 
 
 GIT = porcelain(changed(".M"), untracked(), ab="+2 -0")
 ACCOUNT = "me@example.com"
-A = f" • Account: {ACCOUNT}"
+A = f" • {ACCOUNT}"
 MEMORY = (int(7.6 * 2**30), int(14.8 * 2**30))
 
 
@@ -29,8 +30,8 @@ class OrderTest(unittest.TestCase):
         self.assertEqual(
             line,
             "~/…/demo • 5h 23.5% [14:00] • 7d 41.2% [Sun 12:00] • "
-            "Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • "
-            "repo:main !1 ?1 ⇡2 • Account: me@example.com",
+            "16k/200k 8% • Opus 5.5 (high) • 7.6GB/14.8GB • "
+            "repo:main !1 ?1 ⇡2 • me@example.com",
         )
 
     def test_account_can_be_turned_off(self):
@@ -54,23 +55,23 @@ class ShrinkTest(unittest.TestCase):
     model, cwd."""
 
     EXPECTED = [
-        "~/…/demo • 5h 23.5% [14:00] • 7d 41.2% [Sun 12:00] • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% [14:00] • 7d 41.2% [Sun 12:00] • 16k/200k 8% • Opus 5.5 (high) • 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 1. reset times
-        "~/…/demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • 7d 41.2% • 16k/200k 8% • Opus 5.5 (high) • 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 2. context's percentage
-        "~/…/demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "~/…/demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 (high) • 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 3. cwd down to its leaf
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 (high) • 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 4. git symbols
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main" + A,
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 (high) • 7.6GB/14.8GB • repo:main" + A,
         # 5. effort
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main" + A,
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 • 7.6GB/14.8GB • repo:main" + A,
         # then whole fields: account, memory, git, model, cwd
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • repo:main",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k",
-        "5h 23.5% • 7d 41.2% • Context: 16k/200k",
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 • 7.6GB/14.8GB • repo:main",
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5 • repo:main",
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k • Opus 5.5",
+        "demo • 5h 23.5% • 7d 41.2% • 16k/200k",
+        "5h 23.5% • 7d 41.2% • 16k/200k",
     ]
 
     def test_shrink_sequence(self):
@@ -141,13 +142,14 @@ class WrapTest(unittest.TestCase):
                     self.assertTrue(all(len(line) <= width for line in lines))
 
     def test_fields_keep_their_order(self):
-        # Each field by its label; the directory has none and changes as it
-        # shortens, so it is whatever matches no label.
-        labels = ["5h", "7d", "Context:", "Opus", "RAM:", "repo:", "Account:"]
-        order = ["cwd"] + labels
+        # Each field by the shape of its value; the directory changes as it
+        # shortens, so it is whatever matches no other field.
+        patterns = {"5h": r"5h ", "7d": r"7d ", "context": r"\d+k/", "model": r"Opus",
+                    "memory": r"[\d.]+GB/", "git": r"repo:", "account": r"\S+@"}
+        order = ["cwd"] + list(patterns)
 
         def field(text):
-            return next((label for label in labels if text.startswith(label)), "cwd")
+            return next((name for name, pat in patterns.items() if re.match(pat, text)), "cwd")
 
         for width, lines in self.layouts():
             shown = [field(f) for f in " • ".join(lines).split(" • ")]
