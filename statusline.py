@@ -4,7 +4,7 @@
 Reads the statusline JSON payload on stdin and prints one row (text labels
 shown; with `icons` on they become Nerd Font glyphs):
 
-    ~/…/AI Productivity | 5h 23.5% [19:45] | Week: 41.2% [Thu 14:00] |
+    ~/…/AI Productivity | 5h 23.5% [19:45] | 7d 41.2% [Thu 14:00] |
     Context: 476.5k/1M 48% | Opus 5.5 (high) | obsidian_vault:main !2 +1 ?1 ⇡2
 
 Quota data comes straight from stdin (`rate_limits`), so this makes no network
@@ -77,7 +77,7 @@ ICONS = {
 # What `icons: False` shows instead; a missing key means no label at all.
 TEXT_LABELS = {
     "five_hour": "5h",
-    "seven_day": "Week:",
+    "seven_day": "7d",
     "context": "Context:",
     "account": "Account:",
     "memory": "RAM:",

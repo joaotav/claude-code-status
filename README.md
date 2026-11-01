@@ -4,7 +4,7 @@ A status line for Claude Code: directory, subscription usage, context, model,
 memory, git state and the logged-in account, under the prompt.
 
 ```
-~/…/AI Productivity • 5h 23.5% [19:45] • Week: 41.2% [Thu 14:00] • Context: 477k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
+~/…/AI Productivity • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • Context: 477k/1M 48% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • obsidian_vault:main !2 +1 ?1 ⇡2 • Account: me@example.com
 ```
 
 Shown with text labels; by default each label is a Nerd Font icon.
@@ -15,7 +15,7 @@ Shown with text labels; by default each label is a Nerd Font icon.
 |---|---|---|
 | Directory | `~/…/AI Productivity` | Where the session works |
 | 5-hour limit | `5h 23.5% [19:45]` | Share used, and when it resets |
-| Weekly limit | `Week: 41.2% [Thu 14:00]` | Share used, and when it resets |
+| Weekly limit | `7d 41.2% [Thu 14:00]` | Share used, and when it resets |
 | Context | `Context: 477k/1M 48%` | How full the context window is |
 | Model | `Opus 5.5 (high)` | Model and effort level |
 | Memory | `RAM: 7.6GB/14.8GB` | System RAM in use, as `free -h` counts it |
@@ -122,16 +122,16 @@ brings everything back.
 Wrap at 88 columns:
 
 ```
-claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 (high)
+claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 (high)
 RAM: 7.8GB/14.8GB • claude-code-status:main !1 • Account: me@example.com
 ```
 
 Drop at shrinking widths:
 
 ```
-146 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
- 93 cols  claude-code-status • 5h 23.5% • Week: 41.2% • Context: 8% • Opus 5.5
- 56 cols  5h 23.5% • Week: 41.2% • Context: 8%
+146 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
+ 93 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5
+ 56 cols  5h 23.5% • 7d 41.2% • Context: 8%
 ```
 
 ## Development
