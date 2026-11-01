@@ -3,16 +3,18 @@
 A status line for Claude Code: directory, subscription usage, context, model,
 memory, git state and the logged-in account, under the prompt.
 
+It fits the terminal's width: when the window is too narrow, fields move to
+a second line, and only then shed detail and whole fields; usage always
+stays (see [Narrow terminals](#narrow-terminals-wrap-or-drop)).
+
+**With icons** (the default)
+
 ![The status line with Nerd Font icons](docs/statusline-icons.png)
 
+**Minimal**: plain text, with `STATUSLINE_ICONS=0`
+(see [Icons or minimal](#icons-or-minimal))
+
 ![The same line as plain text](docs/statusline-plain.png)
-
-```
-~/…/my-project • 5h 23.5% [19:45] • 7d 41.2% [Thu 14:00] • 477k/1M 48% • Opus 5.5 (high) • 7.6GB/14.8GB • my-project:main !2 +1 ?1 ⇡2 • me@example.com
-```
-
-Shown as plain text; by default each field starts with a Nerd Font icon
-(see [Icons or plain text](#icons-or-plain-text)).
 
 ## Fields
 
@@ -34,7 +36,7 @@ Git symbols, as in Starship and Powerlevel10k, each hidden at zero:
 `✘` deleted (red), `⇡` to push (cyan), `⇣` to pull (magenta). A detached
 HEAD shows as `@a1b2c3d`.
 
-## Icons or plain text
+## Icons or minimal
 
 By default each field starts with a Nerd Font icon. With `icons` set to
 `False` the line is plain text, as shown above, and most fields carry no
