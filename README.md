@@ -114,24 +114,24 @@ Also available, off by default: `show_input_tokens`, `show_cache_split`,
 | **Wrap** (default) | `2` | Fields move to a second line, in order, losing nothing until two lines are full | You want every field and can spare a row |
 | **Drop** | `1` | Stays on one line, shedding detail and then fields | Vertical space matters more |
 
-Once out of room, both shed in the same order: reset times, raw token
-counts, full path, git symbols, effort; then the account, memory, git, model
+Once out of room, both shed in the same order: reset times, context
+percentage, full path, git symbols, effort; then the account, memory, git, model
 and directory fields. Quota and context always stay. Widening the window
 brings everything back.
 
 Wrap at 88 columns:
 
 ```
-claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 (high)
+claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high)
 RAM: 7.8GB/14.8GB • claude-code-status:main !1 • Account: me@example.com
 ```
 
 Drop at shrinking widths:
 
 ```
-146 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
- 93 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5
- 56 cols  5h 23.5% • 7d 41.2% • Context: 8%
+149 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.8GB/14.8GB • claude-code-status:main • Account: me@example.com
+ 96 cols  claude-code-status • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5
+ 59 cols  5h 23.5% • 7d 41.2% • Context: 16k/200k
 ```
 
 ## Development

@@ -57,20 +57,20 @@ class ShrinkTest(unittest.TestCase):
         "~/…/demo • 5h 23.5% [14:00] • 7d 41.2% [Sun 12:00] • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 1. reset times
         "~/…/demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
-        # 2. context's raw counts
-        "~/…/demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        # 2. context's percentage
+        "~/…/demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 3. cwd down to its leaf
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main !1 ?1 ⇡2" + A,
         # 4. git symbols
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main" + A,
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 (high) • RAM: 7.6GB/14.8GB • repo:main" + A,
         # 5. effort
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main" + A,
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main" + A,
         # then whole fields: account, memory, git, model, cwd
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5 • repo:main",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8% • Opus 5.5",
-        "demo • 5h 23.5% • 7d 41.2% • Context: 8%",
-        "5h 23.5% • 7d 41.2% • Context: 8%",
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • RAM: 7.6GB/14.8GB • repo:main",
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5 • repo:main",
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k • Opus 5.5",
+        "demo • 5h 23.5% • 7d 41.2% • Context: 16k/200k",
+        "5h 23.5% • 7d 41.2% • Context: 16k/200k",
     ]
 
     def test_shrink_sequence(self):

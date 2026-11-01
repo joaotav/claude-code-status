@@ -370,8 +370,8 @@ def context_segments(data: dict) -> list[tuple[int, list[str]]]:
         variants = [full]
         if pct is not None:
             shown = paint(f"{half_up(pct)}%", colour_for(pct))
-            # On a narrow terminal keep the percentage, shed the raw counts.
-            variants = at_stage(2, f"{full} {shown}", labelled("context", shown))
+            # On a narrow terminal keep the raw counts, shed the percentage.
+            variants = at_stage(2, f"{full} {shown}", full)
         segs.append((0, variants))
 
     if CONFIG["show_input_tokens"] and usage.get("input_tokens") is not None:
