@@ -95,6 +95,9 @@ The last line renders a sample, to check it runs. Then add this to
 }
 ```
 
+For the plain-text line without editing the script, start the command
+with `STATUSLINE_ICONS=0 `.
+
 `refreshInterval` keeps the numbers current while idle. With several
 accounts (`CLAUDE_CONFIG_DIR`), each config folder has its own
 `settings.json`: add the block to each. To update: `git pull`.
@@ -106,7 +109,7 @@ Edit `CONFIG` at the top of `statusline.py`.
 | Key | Default | Effect |
 |---|---|---|
 | `show_cwd`, `show_quota`, `show_context`, `show_model`, `show_memory`, `show_git`, `show_account` | `True` | Each field |
-| `icons` | `True` | Nerd Font icons; `False` for plain text |
+| `icons` | `True` | Nerd Font icons; `False` for plain text, as does `STATUSLINE_ICONS=0` |
 | `colour` | `True` | Colour; `NO_COLOR` also turns it off |
 | `warn_at`, `crit_at` | `60`, `85` | Percentages that turn yellow and red |
 | `separator` | `" • "` | Between fields, drawn dim |

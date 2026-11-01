@@ -49,7 +49,8 @@ CONFIG = {
     "crit_at": 85.0,
     "colour": True,
     # Nerd Font glyphs instead of text labels. Turn off in a terminal whose
-    # font lacks them, or they draw as boxes.
+    # font lacks them, or they draw as boxes. STATUSLINE_ICONS=0 also turns
+    # them off, without editing this file.
     "icons": True,
     # Layout. The separator is drawn dim, so the values stand out.
     "separator": " • ",
@@ -116,13 +117,17 @@ def use_colour() -> bool:
     return CONFIG["colour"] and not os.environ.get("NO_COLOR")
 
 
+def use_icons() -> bool:
+    return CONFIG["icons"] and os.environ.get("STATUSLINE_ICONS") != "0"
+
+
 def paint(text: str, code: str) -> str:
     return f"{code}{text}{RESET}" if use_colour() else text
 
 
 def labelled(key: str, text: str) -> str:
     """Prefix `text` with the segment's icon, or its text label as fallback."""
-    label = ICONS[key] if CONFIG["icons"] else TEXT_LABELS.get(key, "")
+    label = ICONS[key] if use_icons() else TEXT_LABELS.get(key, "")
     return f"{label} {text}" if label else text
 
 

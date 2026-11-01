@@ -168,6 +168,14 @@ class LabelsAndColourTest(unittest.TestCase):
             with self.subTest(label):
                 self.assertNotIn(label, line)
 
+    def test_env_var_turns_icons_off(self):
+        with environment(icons=True, git=GIT), mock.patch.dict("os.environ", {"STATUSLINE_ICONS": "0"}):
+            line = run_main(payload())
+        self.assertIn("5h 23.5%", line)
+        for icon in statusline.ICONS.values():
+            with self.subTest(icon):
+                self.assertNotIn(icon, line)
+
     def test_colour_on_emits_ansi(self):
         with environment(colour=True, git=GIT):
             self.assertIn("\033[", run_main(payload()))
